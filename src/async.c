@@ -66,8 +66,7 @@ static void *callbackValDup([[maybe_unused]] void *privdata, const void *src) {
   return dup;
 }
 
-static int callbackKeyCompare([[maybe_unused]] void *privdata, const void *key1,
-                              const void *key2) {
+static int callbackKeyCompare([[maybe_unused]] void *privdata, const void *key1, const void *key2) {
   auto l1 = sdslen((const sds)key1);
   auto l2 = sdslen((const sds)key2);
   if (l1 != l2)

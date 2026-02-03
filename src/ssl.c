@@ -114,7 +114,6 @@ static void opensslDoLock(int mode, int lkid, [[maybe_unused]] const char *f,
   } else {
     sslLockRelease(l);
   }
-
 }
 
 static int initOpensslLocks() {
