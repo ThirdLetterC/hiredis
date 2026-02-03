@@ -118,13 +118,16 @@ typedef struct redisAsyncContext {
 } redisAsyncContext;
 
 /* Functions that proxy to hiredis */
-redisAsyncContext *redisAsyncConnectWithOptions(const redisOptions *options);
-redisAsyncContext *redisAsyncConnect(const char *ip, int port);
-redisAsyncContext *redisAsyncConnectBind(const char *ip, int port,
-                                         const char *source_addr);
-redisAsyncContext *redisAsyncConnectBindWithReuse(const char *ip, int port,
-                                                  const char *source_addr);
-redisAsyncContext *redisAsyncConnectUnix(const char *path);
+[[nodiscard]] redisAsyncContext *
+redisAsyncConnectWithOptions(const redisOptions *options);
+[[nodiscard]] redisAsyncContext *redisAsyncConnect(const char *ip, int port);
+[[nodiscard]] redisAsyncContext *redisAsyncConnectBind(const char *ip,
+                                                       int port,
+                                                       const char *source_addr);
+[[nodiscard]] redisAsyncContext *
+redisAsyncConnectBindWithReuse(const char *ip, int port,
+                               const char *source_addr);
+[[nodiscard]] redisAsyncContext *redisAsyncConnectUnix(const char *path);
 int redisAsyncSetConnectCallback(redisAsyncContext *ac,
                                  redisConnectCallback *fn);
 int redisAsyncSetConnectCallbackNC(redisAsyncContext *ac,

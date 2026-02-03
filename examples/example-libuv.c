@@ -9,7 +9,7 @@
 void debugCallback(redisAsyncContext *c, void *r, void *privdata) {
   (void)privdata; // unused
   redisReply *reply = r;
-  if (reply == NULL) {
+  if (reply == nullptr) {
     /* The DEBUG SLEEP command will almost always fail, because we have set a 1
      * second timeout */
     printf("`DEBUG SLEEP` error: %s\n",
@@ -22,14 +22,14 @@ void debugCallback(redisAsyncContext *c, void *r, void *privdata) {
 
 void getCallback(redisAsyncContext *c, void *r, void *privdata) {
   redisReply *reply = r;
-  if (reply == NULL) {
+  if (reply == nullptr) {
     printf("`GET key` error: %s\n", c->errstr ? c->errstr : "unknown error");
     return;
   }
   printf("`GET key` result: argv[%s]: %s\n", (char *)privdata, reply->str);
 
   /* start another request that demonstrate timeout */
-  redisAsyncCommand(c, debugCallback, NULL, "DEBUG SLEEP %f", 1.5);
+  redisAsyncCommand(c, debugCallback, nullptr, "DEBUG SLEEP %f", 1.5);
 }
 
 void connectCallback(const redisAsyncContext *c, int status) {
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   which is shown in the `debugCallback`.
   */
 
-  redisAsyncCommand(c, NULL, NULL, "SET key %b", argv[argc - 1],
+  redisAsyncCommand(c, nullptr, nullptr, "SET key %b", argv[argc - 1],
                     strlen(argv[argc - 1]));
   redisAsyncCommand(c, getCallback, (char *)"end-1", "GET key");
 

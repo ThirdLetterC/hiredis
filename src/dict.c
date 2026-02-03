@@ -50,7 +50,8 @@ static int _dictInit(dict *ht, dictType *type, void *privDataPtr);
 
 /* Generic hash function (a popular one from Bernstein).
  * I tested a few and this was the best. */
-static unsigned int dictGenHashFunction(const unsigned char *buf, int len) {
+[[maybe_unused]] static unsigned int dictGenHashFunction(const unsigned char *buf,
+                                                         int len) {
   unsigned int hash = 5381;
 
   while (len--)
@@ -63,17 +64,17 @@ static unsigned int dictGenHashFunction(const unsigned char *buf, int len) {
 /* Reset an hashtable already initialized with ht_init().
  * NOTE: This function should only called by ht_destroy(). */
 static void _dictReset(dict *ht) {
-  ht->table = NULL;
+  ht->table = nullptr;
   ht->size = 0;
   ht->sizemask = 0;
   ht->used = 0;
 }
 
 /* Create a new hash table */
-static dict *dictCreate(dictType *type, void *privDataPtr) {
+[[maybe_unused]] static dict *dictCreate(dictType *type, void *privDataPtr) {
   dict *ht = hi_malloc(sizeof(*ht));
-  if (ht == NULL)
-    return NULL;
+  if (ht == nullptr)
+    return nullptr;
 
   _dictInit(ht, type, privDataPtr);
   return ht;
@@ -101,7 +102,7 @@ static int dictExpand(dict *ht, unsigned long size) {
   n.size = realsize;
   n.sizemask = realsize - 1;
   n.table = hi_calloc(realsize, sizeof(dictEntry *));
-  if (n.table == NULL)
+  if (n.table == nullptr)
     return DICT_ERR;
 
   /* Copy all the elements from the old to the new table:
@@ -111,7 +112,7 @@ static int dictExpand(dict *ht, unsigned long size) {
   for (i = 0; i < ht->size && ht->used > 0; i++) {
     dictEntry *he, *nextHe;
 
-    if (ht->table[i] == NULL)
+    if (ht->table[i] == nullptr)
       continue;
 
     /* For each hash entry on this slot... */
@@ -149,7 +150,7 @@ static int dictAdd(dict *ht, void *key, void *val) {
 
   /* Allocates the memory and stores key */
   entry = hi_malloc(sizeof(*entry));
-  if (entry == NULL)
+  if (entry == nullptr)
     return DICT_ERR;
 
   entry->next = ht->table[index];
@@ -166,7 +167,7 @@ static int dictAdd(dict *ht, void *key, void *val) {
  * Return 1 if the key was added from scratch, 0 if there was already an
  * element with such key and dictReplace() just performed a value update
  * operation. */
-static int dictReplace(dict *ht, void *key, void *val) {
+[[maybe_unused]] static int dictReplace(dict *ht, void *key, void *val) {
   dictEntry *entry, auxentry;
 
   /* Try to add the element. If the key
@@ -175,7 +176,7 @@ static int dictReplace(dict *ht, void *key, void *val) {
     return 1;
   /* It already exists, get the entry */
   entry = dictFind(ht, key);
-  if (entry == NULL)
+  if (entry == nullptr)
     return 0;
 
   /* Free the old value and set the new one */
@@ -191,7 +192,7 @@ static int dictReplace(dict *ht, void *key, void *val) {
 }
 
 /* Search and remove an element */
-static int dictDelete(dict *ht, const void *key) {
+[[maybe_unused]] static int dictDelete(dict *ht, const void *key) {
   unsigned int h;
   dictEntry *de, *prevde;
 
@@ -200,7 +201,7 @@ static int dictDelete(dict *ht, const void *key) {
   h = dictHashKey(ht, key) & ht->sizemask;
   de = ht->table[h];
 
-  prevde = NULL;
+  prevde = nullptr;
   while (de) {
     if (dictCompareHashKeys(ht, key, de->key)) {
       /* Unlink the element from the list */
@@ -229,7 +230,7 @@ static int _dictClear(dict *ht) {
   for (i = 0; i < ht->size && ht->used > 0; i++) {
     dictEntry *he, *nextHe;
 
-    if ((he = ht->table[i]) == NULL)
+    if ((he = ht->table[i]) == nullptr)
       continue;
     while (he) {
       nextHe = he->next;
@@ -248,7 +249,7 @@ static int _dictClear(dict *ht) {
 }
 
 /* Clear & Release the hash table */
-static void dictRelease(dict *ht) {
+[[maybe_unused]] static void dictRelease(dict *ht) {
   _dictClear(ht);
   hi_free(ht);
 }
@@ -258,7 +259,7 @@ static dictEntry *dictFind(dict *ht, const void *key) {
   unsigned int h;
 
   if (ht->size == 0)
-    return NULL;
+    return nullptr;
   h = dictHashKey(ht, key) & ht->sizemask;
   he = ht->table[h];
   while (he) {
@@ -266,19 +267,19 @@ static dictEntry *dictFind(dict *ht, const void *key) {
       return he;
     he = he->next;
   }
-  return NULL;
+  return nullptr;
 }
 
-static void dictInitIterator(dictIterator *iter, dict *ht) {
+[[maybe_unused]] static void dictInitIterator(dictIterator *iter, dict *ht) {
   iter->ht = ht;
   iter->index = -1;
-  iter->entry = NULL;
-  iter->nextEntry = NULL;
+  iter->entry = nullptr;
+  iter->nextEntry = nullptr;
 }
 
-static dictEntry *dictNext(dictIterator *iter) {
+[[maybe_unused]] static dictEntry *dictNext(dictIterator *iter) {
   while (1) {
-    if (iter->entry == NULL) {
+    if (iter->entry == nullptr) {
       iter->index++;
       if (iter->index >= (signed)iter->ht->size)
         break;
@@ -293,7 +294,7 @@ static dictEntry *dictNext(dictIterator *iter) {
       return iter->entry;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 /* ------------------------- private functions ------------------------------ */

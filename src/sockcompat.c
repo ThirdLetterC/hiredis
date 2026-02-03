@@ -305,7 +305,7 @@ int win32_redisKeepAlive(SOCKET sockfd, int interval_ms) {
   cfg.keepalivetime = interval_ms;
 
   res = WSAIoctl(sockfd, SIO_KEEPALIVE_VALS, &cfg, sizeof(struct tcp_keepalive),
-                 NULL, 0, &bytes_in, NULL, NULL);
+                 nullptr, 0, &bytes_in, nullptr, nullptr);
 
   return res == 0 ? 0 : _wsaErrorToErrno(res);
 }

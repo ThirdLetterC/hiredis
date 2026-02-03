@@ -51,7 +51,7 @@ hiredisAllocFuncs hiredisSetAllocators(hiredisAllocFuncs *override) {
 }
 
 /* Reset allocators to use libc defaults */
-void hiredisResetAllocators(void) {
+void hiredisResetAllocators() {
   hiredisAllocFns = (hiredisAllocFuncs){
       .mallocFn = malloc,
       .callocFn = calloc,

@@ -27,14 +27,14 @@ typedef struct redisPollEvents {
 } redisPollEvents;
 
 static double redisPollTimevalToDouble(struct timeval *tv) {
-  if (tv == NULL)
+  if (tv == nullptr)
     return 0.0;
   return tv->tv_sec + tv->tv_usec / 1000000.00;
 }
 
-static double redisPollGetNow(void) {
+static double redisPollGetNow() {
   struct timeval tv;
-  gettimeofday(&tv, NULL);
+  gettimeofday(&tv, nullptr);
   return redisPollTimevalToDouble(&tv);
 }
 
@@ -159,12 +159,12 @@ static int redisPollAttach(redisAsyncContext *ac) {
   redisPollEvents *e;
 
   /* Nothing should be attached when something is already attached */
-  if (ac->ev.data != NULL)
+  if (ac->ev.data != nullptr)
     return REDIS_ERR;
 
   /* Create container for context and r/w events */
   e = (redisPollEvents *)hi_malloc(sizeof(*e));
-  if (e == NULL)
+  if (e == nullptr)
     return REDIS_ERR;
   memset(e, 0, sizeof(*e));
 

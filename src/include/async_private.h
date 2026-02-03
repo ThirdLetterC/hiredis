@@ -60,7 +60,7 @@
   do {                                                                         \
     if ((ctx)->ev.cleanup)                                                     \
       (ctx)->ev.cleanup((ctx)->ev.data);                                       \
-    ctx->ev.cleanup = NULL;                                                    \
+    ctx->ev.cleanup = nullptr;                                                \
   } while (0)
 
 static inline void refreshTimeout(redisAsyncContext *ctx) {

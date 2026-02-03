@@ -33,6 +33,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -43,19 +44,19 @@
 #include "sds.h"
 
 /* Initial size of our nested reply stack and how much we grow it when needd */
-#define REDIS_READER_STACK_SIZE 9
+static constexpr int REDIS_READER_STACK_SIZE = 9;
 
 static void __redisReaderSetError(redisReader *r, int type, const char *str) {
   size_t len;
 
-  if (r->reply != NULL && r->fn && r->fn->freeObject) {
+  if (r->reply != nullptr && r->fn && r->fn->freeObject) {
     r->fn->freeObject(r->reply);
-    r->reply = NULL;
+    r->reply = nullptr;
   }
 
   /* Clear input buffer on errors. */
   sdsfree(r->buf);
-  r->buf = NULL;
+  r->buf = nullptr;
   r->pos = r->len = 0;
 
   /* Reset task stack. */
@@ -123,7 +124,7 @@ static char *readBytes(redisReader *r, unsigned int bytes) {
     r->pos += bytes;
     return p;
   }
-  return NULL;
+  return nullptr;
 }
 
 /* Find pointer to \r\n. */
@@ -132,13 +133,13 @@ static char *seekNewline(char *s, size_t len) {
 
   /* We cannot match with fewer than 2 bytes */
   if (len < 2)
-    return NULL;
+    return nullptr;
 
   /* Search up to len - 1 characters */
   len--;
 
   /* Look for the \r */
-  while ((ret = memchr(s, '\r', len)) != NULL) {
+  while ((ret = memchr(s, '\r', len)) != nullptr) {
     if (ret[1] == '\n') {
       /* Found. */
       break;
@@ -175,7 +176,7 @@ static int string2ll(const char *s, size_t slen, long long *value) {
 
   /* Special case: first and only digit is 0. */
   if (slen == 1 && p[0] == '0') {
-    if (value != NULL)
+    if (value != nullptr)
       *value = 0;
     return REDIS_OK;
   }
@@ -222,12 +223,12 @@ static int string2ll(const char *s, size_t slen, long long *value) {
   if (negative) {
     if (v > ((unsigned long long)(-(LLONG_MIN + 1)) + 1)) /* Overflow. */
       return REDIS_ERR;
-    if (value != NULL)
+    if (value != nullptr)
       *value = -v;
   } else {
     if (v > LLONG_MAX) /* Overflow. */
       return REDIS_ERR;
-    if (value != NULL)
+    if (value != nullptr)
       *value = v;
   }
   return REDIS_OK;
@@ -239,14 +240,14 @@ static char *readLine(redisReader *r, int *_len) {
 
   p = r->buf + r->pos;
   s = seekNewline(p, (r->len - r->pos));
-  if (s != NULL) {
+  if (s != nullptr) {
     len = s - (r->buf + r->pos);
     r->pos += len + 2; /* skip \r\n */
     if (_len)
       *_len = len;
     return p;
   }
-  return NULL;
+  return nullptr;
 }
 
 static void moveToNextTask(redisReader *r) {
@@ -282,7 +283,7 @@ static int processLineItem(redisReader *r) {
   char *p;
   int len;
 
-  if ((p = readLine(r, &len)) != NULL) {
+  if ((p = readLine(r, &len)) != nullptr) {
     if (cur->type == REDIS_REPLY_INTEGER) {
       long long v;
 
@@ -387,7 +388,7 @@ static int processLineItem(redisReader *r) {
         obj = (void *)(uintptr_t)(cur->type);
     }
 
-    if (obj == NULL) {
+    if (obj == nullptr) {
       __redisReaderSetErrorOOM(r);
       return REDIS_ERR;
     }
@@ -404,7 +405,7 @@ static int processLineItem(redisReader *r) {
 
 static int processBulkItem(redisReader *r) {
   redisReadTask *cur = r->task[r->ridx];
-  void *obj = NULL;
+  void *obj = nullptr;
   char *p, *s;
   long long len;
   unsigned long bytelen;
@@ -412,7 +413,7 @@ static int processBulkItem(redisReader *r) {
 
   p = r->buf + r->pos;
   s = seekNewline(p, r->len - r->pos);
-  if (s != NULL) {
+  if (s != nullptr) {
     p = r->buf + r->pos;
     bytelen = s - (r->buf + r->pos) + 2; /* include \r\n */
 
@@ -455,7 +456,7 @@ static int processBulkItem(redisReader *r) {
 
     /* Proceed when obj was created. */
     if (success) {
-      if (obj == NULL) {
+      if (obj == nullptr) {
         __redisReaderSetErrorOOM(r);
         return REDIS_ERR;
       }
@@ -480,7 +481,7 @@ static int redisReaderGrow(redisReader *r) {
   /* Grow our stack size */
   newlen = r->tasks + REDIS_READER_STACK_SIZE;
   aux = hi_realloc(r->task, sizeof(*r->task) * newlen);
-  if (aux == NULL)
+  if (aux == nullptr)
     goto oom;
 
   r->task = aux;
@@ -488,7 +489,7 @@ static int redisReaderGrow(redisReader *r) {
   /* Allocate new tasks */
   for (; r->tasks < newlen; r->tasks++) {
     r->task[r->tasks] = hi_calloc(1, sizeof(**r->task));
-    if (r->task[r->tasks] == NULL)
+    if (r->task[r->tasks] == nullptr)
       goto oom;
   }
 
@@ -511,7 +512,7 @@ static int processAggregateItem(redisReader *r) {
       return REDIS_ERR;
   }
 
-  if ((p = readLine(r, &len)) != NULL) {
+  if ((p = readLine(r, &len)) != nullptr) {
     if (string2ll(p, len, &elements) == REDIS_ERR) {
       __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Bad multi-bulk length");
       return REDIS_ERR;
@@ -519,7 +520,8 @@ static int processAggregateItem(redisReader *r) {
 
     root = (r->ridx == 0);
 
-    if (elements < -1 || (LLONG_MAX > SIZE_MAX && elements > SIZE_MAX) ||
+    if (elements < -1 ||
+        (LLONG_MAX > SIZE_MAX && elements > (long long)SIZE_MAX) ||
         (r->maxelements > 0 && elements > r->maxelements)) {
       __redisReaderSetError(r, REDIS_ERR_PROTOCOL,
                             "Multi-bulk length out of range");
@@ -532,7 +534,7 @@ static int processAggregateItem(redisReader *r) {
       else
         obj = (void *)REDIS_REPLY_NIL;
 
-      if (obj == NULL) {
+      if (obj == nullptr) {
         __redisReaderSetErrorOOM(r);
         return REDIS_ERR;
       }
@@ -547,7 +549,7 @@ static int processAggregateItem(redisReader *r) {
       else
         obj = (void *)(uintptr_t)cur->type;
 
-      if (obj == NULL) {
+      if (obj == nullptr) {
         __redisReaderSetErrorOOM(r);
         return REDIS_ERR;
       }
@@ -560,7 +562,7 @@ static int processAggregateItem(redisReader *r) {
         r->task[r->ridx]->type = -1;
         r->task[r->ridx]->elements = -1;
         r->task[r->ridx]->idx = 0;
-        r->task[r->ridx]->obj = NULL;
+        r->task[r->ridx]->obj = nullptr;
         r->task[r->ridx]->parent = cur;
         r->task[r->ridx]->privdata = r->privdata;
       } else {
@@ -583,7 +585,7 @@ static int processItem(redisReader *r) {
 
   /* check if we need to read type */
   if (cur->type < 0) {
-    if ((p = readBytes(r, 1)) != NULL) {
+    if ((p = readBytes(r, 1)) != nullptr) {
       switch (p[0]) {
       case '-':
         cur->type = REDIS_REPLY_ERROR;
@@ -657,7 +659,7 @@ static int processItem(redisReader *r) {
   case REDIS_REPLY_PUSH:
     return processAggregateItem(r);
   default:
-    assert(NULL);
+    assert(false);
     return REDIS_ERR; /* Avoid warning. */
   }
 }
@@ -666,20 +668,20 @@ redisReader *redisReaderCreateWithFunctions(redisReplyObjectFunctions *fn) {
   redisReader *r;
 
   r = hi_calloc(1, sizeof(redisReader));
-  if (r == NULL)
-    return NULL;
+  if (r == nullptr)
+    return nullptr;
 
   r->buf = sdsempty();
-  if (r->buf == NULL)
+  if (r->buf == nullptr)
     goto oom;
 
   r->task = hi_calloc(REDIS_READER_STACK_SIZE, sizeof(*r->task));
-  if (r->task == NULL)
+  if (r->task == nullptr)
     goto oom;
 
   for (; r->tasks < REDIS_READER_STACK_SIZE; r->tasks++) {
     r->task[r->tasks] = hi_calloc(1, sizeof(**r->task));
-    if (r->task[r->tasks] == NULL)
+    if (r->task[r->tasks] == nullptr)
       goto oom;
   }
 
@@ -691,14 +693,14 @@ redisReader *redisReaderCreateWithFunctions(redisReplyObjectFunctions *fn) {
   return r;
 oom:
   redisReaderFree(r);
-  return NULL;
+  return nullptr;
 }
 
 void redisReaderFree(redisReader *r) {
-  if (r == NULL)
+  if (r == nullptr)
     return;
 
-  if (r->reply != NULL && r->fn && r->fn->freeObject)
+  if (r->reply != nullptr && r->fn && r->fn->freeObject)
     r->fn->freeObject(r->reply);
 
   if (r->task) {
@@ -722,19 +724,19 @@ int redisReaderFeed(redisReader *r, const char *buf, size_t len) {
     return REDIS_ERR;
 
   /* Copy the provided buffer. */
-  if (buf != NULL && len >= 1) {
+  if (buf != nullptr && len >= 1) {
     /* Destroy internal buffer when it is empty and is quite large. */
     if (r->len == 0 && r->maxbuf != 0 && sdsavail(r->buf) > r->maxbuf) {
       sdsfree(r->buf);
       r->buf = sdsempty();
-      if (r->buf == 0)
+      if (r->buf == nullptr)
         goto oom;
 
       r->pos = 0;
     }
 
     newbuf = sdscatlen(r->buf, buf, len);
-    if (newbuf == NULL)
+    if (newbuf == nullptr)
       goto oom;
 
     r->buf = newbuf;
@@ -748,9 +750,9 @@ oom:
 }
 
 int redisReaderGetReply(redisReader *r, void **reply) {
-  /* Default target pointer to NULL. */
-  if (reply != NULL)
-    *reply = NULL;
+  /* Default target pointer to nullptr. */
+  if (reply != nullptr)
+    *reply = nullptr;
 
   /* Return early when this reader is in an erroneous state. */
   if (r->err)
@@ -765,8 +767,8 @@ int redisReaderGetReply(redisReader *r, void **reply) {
     r->task[0]->type = -1;
     r->task[0]->elements = -1;
     r->task[0]->idx = -1;
-    r->task[0]->obj = NULL;
-    r->task[0]->parent = NULL;
+    r->task[0]->obj = nullptr;
+    r->task[0]->parent = nullptr;
     r->task[0]->privdata = r->privdata;
     r->ridx = 0;
   }
@@ -791,12 +793,12 @@ int redisReaderGetReply(redisReader *r, void **reply) {
 
   /* Emit a reply when there is one. */
   if (r->ridx == -1) {
-    if (reply != NULL) {
+    if (reply != nullptr) {
       *reply = r->reply;
-    } else if (r->reply != NULL && r->fn && r->fn->freeObject) {
+    } else if (r->reply != nullptr && r->fn && r->fn->freeObject) {
       r->fn->freeObject(r->reply);
     }
-    r->reply = NULL;
+    r->reply = nullptr;
   }
   return REDIS_OK;
 }

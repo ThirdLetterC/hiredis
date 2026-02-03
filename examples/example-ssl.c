@@ -19,10 +19,10 @@ int main(int argc, char **argv) {
   int port = atoi(argv[2]);
   const char *cert = argv[3];
   const char *key = argv[4];
-  const char *ca = argc > 4 ? argv[5] : NULL;
+  const char *ca = argc > 4 ? argv[5] : nullptr;
 
   redisInitOpenSSL();
-  ssl = redisCreateSSLContext(ca, NULL, cert, key, NULL, &ssl_error);
+  ssl = redisCreateSSLContext(ca, nullptr, cert, key, nullptr, &ssl_error);
   if (!ssl || ssl_error != REDIS_SSL_CTX_NONE) {
     printf("SSL Context error: %s\n", redisSSLContextGetError(ssl_error));
     exit(1);
@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   options.connect_timeout = &tv;
   c = redisConnectWithOptions(&options);
 
-  if (c == NULL || c->err) {
+  if (c == nullptr || c->err) {
     if (c) {
       printf("Connection error: %s\n", c->errstr);
       redisFree(c);

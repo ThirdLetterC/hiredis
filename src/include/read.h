@@ -31,42 +31,43 @@
 
 #ifndef __HIREDIS_READ_H
 #define __HIREDIS_READ_H
-#include <stdio.h> /* for size_t */
+#include <stddef.h> /* for size_t */
 
-#define REDIS_ERR -1
-#define REDIS_OK 0
+[[maybe_unused]] static constexpr int REDIS_ERR = -1;
+[[maybe_unused]] static constexpr int REDIS_OK = 0;
 
 /* When an error occurs, the err flag in a context is set to hold the type of
  * error that occurred. REDIS_ERR_IO means there was an I/O error and you
  * should use the "errno" variable to find out what is wrong.
  * For other values, the "errstr" field will hold a description. */
-#define REDIS_ERR_IO 1       /* Error in read or write */
-#define REDIS_ERR_EOF 3      /* End of file */
-#define REDIS_ERR_PROTOCOL 4 /* Protocol error */
-#define REDIS_ERR_OOM 5      /* Out of memory */
-#define REDIS_ERR_TIMEOUT 6  /* Timed out */
-#define REDIS_ERR_OTHER 2    /* Everything else... */
+[[maybe_unused]] static constexpr int REDIS_ERR_IO = 1;       /* Error in read or write */
+[[maybe_unused]] static constexpr int REDIS_ERR_EOF = 3;      /* End of file */
+[[maybe_unused]] static constexpr int REDIS_ERR_PROTOCOL = 4; /* Protocol error */
+[[maybe_unused]] static constexpr int REDIS_ERR_OOM = 5;      /* Out of memory */
+[[maybe_unused]] static constexpr int REDIS_ERR_TIMEOUT = 6;  /* Timed out */
+[[maybe_unused]] static constexpr int REDIS_ERR_OTHER = 2;    /* Everything else... */
 
-#define REDIS_REPLY_STRING 1
-#define REDIS_REPLY_ARRAY 2
-#define REDIS_REPLY_INTEGER 3
-#define REDIS_REPLY_NIL 4
-#define REDIS_REPLY_STATUS 5
-#define REDIS_REPLY_ERROR 6
-#define REDIS_REPLY_DOUBLE 7
-#define REDIS_REPLY_BOOL 8
-#define REDIS_REPLY_MAP 9
-#define REDIS_REPLY_SET 10
-#define REDIS_REPLY_ATTR 11
-#define REDIS_REPLY_PUSH 12
-#define REDIS_REPLY_BIGNUM 13
-#define REDIS_REPLY_VERB 14
+[[maybe_unused]] static constexpr int REDIS_REPLY_STRING = 1;
+[[maybe_unused]] static constexpr int REDIS_REPLY_ARRAY = 2;
+[[maybe_unused]] static constexpr int REDIS_REPLY_INTEGER = 3;
+[[maybe_unused]] static constexpr int REDIS_REPLY_NIL = 4;
+[[maybe_unused]] static constexpr int REDIS_REPLY_STATUS = 5;
+[[maybe_unused]] static constexpr int REDIS_REPLY_ERROR = 6;
+[[maybe_unused]] static constexpr int REDIS_REPLY_DOUBLE = 7;
+[[maybe_unused]] static constexpr int REDIS_REPLY_BOOL = 8;
+[[maybe_unused]] static constexpr int REDIS_REPLY_MAP = 9;
+[[maybe_unused]] static constexpr int REDIS_REPLY_SET = 10;
+[[maybe_unused]] static constexpr int REDIS_REPLY_ATTR = 11;
+[[maybe_unused]] static constexpr int REDIS_REPLY_PUSH = 12;
+[[maybe_unused]] static constexpr int REDIS_REPLY_BIGNUM = 13;
+[[maybe_unused]] static constexpr int REDIS_REPLY_VERB = 14;
 
 /* Default max unused reader buffer. */
-#define REDIS_READER_MAX_BUF (1024 * 16)
+[[maybe_unused]] static constexpr size_t REDIS_READER_MAX_BUF = 16'384;
 
 /* Default multi-bulk element limit */
-#define REDIS_READER_MAX_ARRAY_ELEMENTS ((1LL << 32) - 1)
+[[maybe_unused]] static constexpr long long REDIS_READER_MAX_ARRAY_ELEMENTS =
+    (1LL << 32) - 1;
 
 #ifdef __cplusplus
 extern "C" {
@@ -112,7 +113,8 @@ typedef struct redisReader {
 } redisReader;
 
 /* Public API for the protocol parser. */
-redisReader *redisReaderCreateWithFunctions(redisReplyObjectFunctions *fn);
+[[nodiscard]] redisReader *
+redisReaderCreateWithFunctions(redisReplyObjectFunctions *fn);
 void redisReaderFree(redisReader *r);
 int redisReaderFeed(redisReader *r, const char *buf, size_t len);
 int redisReaderGetReply(redisReader *r, void **reply);

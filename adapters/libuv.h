@@ -1,6 +1,7 @@
 #ifndef __HIREDIS_LIBUV_H__
 #define __HIREDIS_LIBUV_H__
 
+#include <alloc.h>
 #include <async.h>
 #include <hiredis.h>
 #include <string.h>
@@ -17,10 +18,10 @@ static void redisLibuvPoll(uv_poll_t *handle, int status, int events) {
   redisLibuvEvents *p = (redisLibuvEvents *)handle->data;
   int ev = (status ? p->events : events);
 
-  if (p->context != NULL && (ev & UV_READABLE)) {
+  if (p->context != nullptr && (ev & UV_READABLE)) {
     redisAsyncHandleRead(p->context);
   }
-  if (p->context != NULL && (ev & UV_WRITABLE)) {
+  if (p->context != nullptr && (ev & UV_WRITABLE)) {
     redisAsyncHandleWrite(p->context);
   }
 }
@@ -75,7 +76,7 @@ static void redisLibuvDelWrite(void *privdata) {
 
 static void on_timer_close(uv_handle_t *handle) {
   redisLibuvEvents *p = (redisLibuvEvents *)handle->data;
-  p->timer.data = NULL;
+  p->timer.data = nullptr;
   if (!p->handle.data) {
     // both timer and handle are closed
     hi_free(p);
@@ -85,7 +86,7 @@ static void on_timer_close(uv_handle_t *handle) {
 
 static void on_handle_close(uv_handle_t *handle) {
   redisLibuvEvents *p = (redisLibuvEvents *)handle->data;
-  p->handle.data = NULL;
+  p->handle.data = nullptr;
   if (!p->timer.data) {
     // timer never started, or timer already destroyed
     hi_free(p);
@@ -125,7 +126,7 @@ static void redisLibuvSetTimeout(void *privdata, struct timeval tv) {
 static void redisLibuvCleanup(void *privdata) {
   redisLibuvEvents *p = (redisLibuvEvents *)privdata;
 
-  p->context = NULL; // indicate that context might no longer exist
+  p->context = nullptr; // indicate that context might no longer exist
   if (p->timer.data) {
     uv_close((uv_handle_t *)&p->timer, on_timer_close);
   }
@@ -135,7 +136,7 @@ static void redisLibuvCleanup(void *privdata) {
 static int redisLibuvAttach(redisAsyncContext *ac, uv_loop_t *loop) {
   redisContext *c = &(ac->c);
 
-  if (ac->ev.data != NULL) {
+  if (ac->ev.data != nullptr) {
     return REDIS_ERR;
   }
 
@@ -147,7 +148,7 @@ static int redisLibuvAttach(redisAsyncContext *ac, uv_loop_t *loop) {
   ac->ev.scheduleTimer = redisLibuvSetTimeout;
 
   redisLibuvEvents *p = (redisLibuvEvents *)hi_malloc(sizeof(*p));
-  if (p == NULL)
+  if (p == nullptr)
     return REDIS_ERR;
 
   memset(p, 0, sizeof(*p));

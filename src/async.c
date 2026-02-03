@@ -37,6 +37,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -63,8 +64,8 @@ static void *callbackValDup(void *privdata, const void *src) {
   redisCallback *dup;
 
   dup = hi_malloc(sizeof(*dup));
-  if (dup == NULL)
-    return NULL;
+  if (dup == nullptr)
+    return nullptr;
 
   memcpy(dup, src, sizeof(*dup));
   return dup;
@@ -92,24 +93,24 @@ static void callbackValDestructor(void *privdata, void *val) {
   hi_free(val);
 }
 
-static dictType callbackDict = {callbackHash,          NULL,
+static dictType callbackDict = {callbackHash,          nullptr,
                                 callbackValDup,        callbackKeyCompare,
                                 callbackKeyDestructor, callbackValDestructor};
 
 static redisAsyncContext *redisAsyncInitialize(redisContext *c) {
   redisAsyncContext *ac;
-  dict *channels = NULL, *patterns = NULL;
+  dict *channels = nullptr, *patterns = nullptr;
 
-  channels = dictCreate(&callbackDict, NULL);
-  if (channels == NULL)
+  channels = dictCreate(&callbackDict, nullptr);
+  if (channels == nullptr)
     goto oom;
 
-  patterns = dictCreate(&callbackDict, NULL);
-  if (patterns == NULL)
+  patterns = dictCreate(&callbackDict, nullptr);
+  if (patterns == nullptr)
     goto oom;
 
   ac = hi_realloc(c, sizeof(redisAsyncContext));
-  if (ac == NULL)
+  if (ac == nullptr)
     goto oom;
 
   c = &(ac->c);
@@ -120,26 +121,26 @@ static redisAsyncContext *redisAsyncInitialize(redisContext *c) {
   c->flags &= ~REDIS_CONNECTED;
 
   ac->err = 0;
-  ac->errstr = NULL;
-  ac->data = NULL;
-  ac->dataCleanup = NULL;
+  ac->errstr = nullptr;
+  ac->data = nullptr;
+  ac->dataCleanup = nullptr;
 
-  ac->ev.data = NULL;
-  ac->ev.addRead = NULL;
-  ac->ev.delRead = NULL;
-  ac->ev.addWrite = NULL;
-  ac->ev.delWrite = NULL;
-  ac->ev.cleanup = NULL;
-  ac->ev.scheduleTimer = NULL;
+  ac->ev.data = nullptr;
+  ac->ev.addRead = nullptr;
+  ac->ev.delRead = nullptr;
+  ac->ev.addWrite = nullptr;
+  ac->ev.delWrite = nullptr;
+  ac->ev.cleanup = nullptr;
+  ac->ev.scheduleTimer = nullptr;
 
-  ac->onConnect = NULL;
-  ac->onConnectNC = NULL;
-  ac->onDisconnect = NULL;
+  ac->onConnect = nullptr;
+  ac->onConnectNC = nullptr;
+  ac->onDisconnect = nullptr;
 
-  ac->replies.head = NULL;
-  ac->replies.tail = NULL;
-  ac->sub.replies.head = NULL;
-  ac->sub.replies.tail = NULL;
+  ac->replies.head = nullptr;
+  ac->replies.tail = nullptr;
+  ac->sub.replies.head = nullptr;
+  ac->sub.replies.tail = nullptr;
   ac->sub.channels = channels;
   ac->sub.patterns = patterns;
   ac->sub.pending_unsubs = 0;
@@ -150,7 +151,7 @@ oom:
     dictRelease(channels);
   if (patterns)
     dictRelease(patterns);
-  return NULL;
+  return nullptr;
 }
 
 /* We want the error field to be accessible directly instead of requiring
@@ -171,19 +172,19 @@ redisAsyncContext *redisAsyncConnectWithOptions(const redisOptions *options) {
 
   /* Clear any erroneously set sync callback and flag that we don't want to
    * use freeReplyObject by default. */
-  myOptions.push_cb = NULL;
+  myOptions.push_cb = nullptr;
   myOptions.options |= REDIS_OPT_NO_PUSH_AUTOFREE;
 
   myOptions.options |= REDIS_OPT_NONBLOCK;
   c = redisConnectWithOptions(&myOptions);
-  if (c == NULL) {
-    return NULL;
+  if (c == nullptr) {
+    return nullptr;
   }
 
   ac = redisAsyncInitialize(c);
-  if (ac == NULL) {
+  if (ac == nullptr) {
     redisFree(c);
-    return NULL;
+    return nullptr;
   }
 
   /* Set any configured async push handler */
@@ -245,17 +246,17 @@ static int redisAsyncSetConnectCallbackImpl(redisAsyncContext *ac,
 
 int redisAsyncSetConnectCallback(redisAsyncContext *ac,
                                  redisConnectCallback *fn) {
-  return redisAsyncSetConnectCallbackImpl(ac, fn, NULL);
+  return redisAsyncSetConnectCallbackImpl(ac, fn, nullptr);
 }
 
 int redisAsyncSetConnectCallbackNC(redisAsyncContext *ac,
                                    redisConnectCallbackNC *fn) {
-  return redisAsyncSetConnectCallbackImpl(ac, NULL, fn);
+  return redisAsyncSetConnectCallbackImpl(ac, nullptr, fn);
 }
 
 int redisAsyncSetDisconnectCallback(redisAsyncContext *ac,
                                     redisDisconnectCallback *fn) {
-  if (ac->onDisconnect == NULL) {
+  if (ac->onDisconnect == nullptr) {
     ac->onDisconnect = fn;
     return REDIS_OK;
   }
@@ -268,18 +269,18 @@ static int __redisPushCallback(redisCallbackList *list, redisCallback *source) {
 
   /* Copy callback from stack to heap */
   cb = hi_malloc(sizeof(*cb));
-  if (cb == NULL)
+  if (cb == nullptr)
     return REDIS_ERR_OOM;
 
-  if (source != NULL) {
+  if (source != nullptr) {
     memcpy(cb, source, sizeof(*cb));
-    cb->next = NULL;
+    cb->next = nullptr;
   }
 
   /* Store callback in list */
-  if (list->head == NULL)
+  if (list->head == nullptr)
     list->head = cb;
-  if (list->tail != NULL)
+  if (list->tail != nullptr)
     list->tail->next = cb;
   list->tail = cb;
   return REDIS_OK;
@@ -288,13 +289,13 @@ static int __redisPushCallback(redisCallbackList *list, redisCallback *source) {
 static int __redisShiftCallback(redisCallbackList *list,
                                 redisCallback *target) {
   redisCallback *cb = list->head;
-  if (cb != NULL) {
+  if (cb != nullptr) {
     list->head = cb->next;
     if (cb == list->tail)
-      list->tail = NULL;
+      list->tail = nullptr;
 
     /* Copy callback from heap to stack */
-    if (target != NULL)
+    if (target != nullptr)
       memcpy(target, cb, sizeof(*cb));
     hi_free(cb);
     return REDIS_OK;
@@ -305,7 +306,7 @@ static int __redisShiftCallback(redisCallbackList *list,
 static void __redisRunCallback(redisAsyncContext *ac, redisCallback *cb,
                                redisReply *reply) {
   redisContext *c = &(ac->c);
-  if (cb->fn != NULL) {
+  if (cb->fn != nullptr) {
     c->flags |= REDIS_IN_CALLBACK;
     cb->fn(ac, reply, cb->privdata);
     c->flags &= ~REDIS_IN_CALLBACK;
@@ -313,7 +314,7 @@ static void __redisRunCallback(redisAsyncContext *ac, redisCallback *cb,
 }
 
 static void __redisRunPushCallback(redisAsyncContext *ac, redisReply *reply) {
-  if (ac->push_cb != NULL) {
+  if (ac->push_cb != nullptr) {
     ac->c.flags |= REDIS_IN_CALLBACK;
     ac->push_cb(ac, reply);
     ac->c.flags &= ~REDIS_IN_CALLBACK;
@@ -321,7 +322,7 @@ static void __redisRunPushCallback(redisAsyncContext *ac, redisReply *reply) {
 }
 
 static void __redisRunConnectCallback(redisAsyncContext *ac, int status) {
-  if (ac->onConnect == NULL && ac->onConnectNC == NULL)
+  if (ac->onConnect == nullptr && ac->onConnectNC == nullptr)
     return;
 
   if (!(ac->c.flags & REDIS_IN_CALLBACK)) {
@@ -362,25 +363,25 @@ static void __redisAsyncFree(redisAsyncContext *ac) {
   dictIterator it;
   dictEntry *de;
 
-  /* Execute pending callbacks with NULL reply. */
+  /* Execute pending callbacks with nullptr reply. */
   while (__redisShiftCallback(&ac->replies, &cb) == REDIS_OK)
-    __redisRunCallback(ac, &cb, NULL);
+    __redisRunCallback(ac, &cb, nullptr);
   while (__redisShiftCallback(&ac->sub.replies, &cb) == REDIS_OK)
-    __redisRunCallback(ac, &cb, NULL);
+    __redisRunCallback(ac, &cb, nullptr);
 
-  /* Run subscription callbacks with NULL reply */
+  /* Run subscription callbacks with nullptr reply */
   if (ac->sub.channels) {
     dictInitIterator(&it, ac->sub.channels);
-    while ((de = dictNext(&it)) != NULL)
-      __redisRunCallback(ac, dictGetEntryVal(de), NULL);
+    while ((de = dictNext(&it)) != nullptr)
+      __redisRunCallback(ac, dictGetEntryVal(de), nullptr);
 
     dictRelease(ac->sub.channels);
   }
 
   if (ac->sub.patterns) {
     dictInitIterator(&it, ac->sub.patterns);
-    while ((de = dictNext(&it)) != NULL)
-      __redisRunCallback(ac, dictGetEntryVal(de), NULL);
+    while ((de = dictNext(&it)) != nullptr)
+      __redisRunCallback(ac, dictGetEntryVal(de), nullptr);
 
     dictRelease(ac->sub.patterns);
   }
@@ -410,7 +411,7 @@ static void __redisAsyncFree(redisAsyncContext *ac) {
  * free'ing. To do so, a flag is set on the context which is picked up by
  * redisProcessCallbacks(). Otherwise, the context is immediately free'd. */
 void redisAsyncFree(redisAsyncContext *ac) {
-  if (ac == NULL)
+  if (ac == nullptr)
     return;
 
   redisContext *c = &(ac->c);
@@ -429,7 +430,7 @@ void __redisAsyncDisconnect(redisAsyncContext *ac) {
 
   if (ac->err == 0) {
     /* For clean disconnects, there should be no pending callbacks. */
-    int ret = __redisShiftCallback(&ac->replies, NULL);
+    int ret = __redisShiftCallback(&ac->replies, nullptr);
     assert(ret == REDIS_ERR);
   } else {
     /* Disconnection is caused by an error, make sure that pending
@@ -442,7 +443,7 @@ void __redisAsyncDisconnect(redisAsyncContext *ac) {
   _EL_CLEANUP(ac);
 
   /* For non-clean disconnects, __redisAsyncFree() will execute pending
-   * callbacks with a NULL-reply. */
+   * callbacks with a nullptr-reply. */
   if (!(c->flags & REDIS_NO_AUTO_FREE)) {
     __redisAsyncFree(ac);
   }
@@ -460,7 +461,7 @@ void redisAsyncDisconnect(redisAsyncContext *ac) {
 
   /** unset the auto-free flag here, because disconnect undoes this */
   c->flags &= ~REDIS_NO_AUTO_FREE;
-  if (!(c->flags & REDIS_IN_CALLBACK) && ac->replies.head == NULL)
+  if (!(c->flags & REDIS_IN_CALLBACK) && ac->replies.head == nullptr)
     __redisAsyncDisconnect(ac);
 }
 
@@ -468,11 +469,11 @@ static int __redisGetSubscribeCallback(redisAsyncContext *ac, redisReply *reply,
                                        redisCallback *dstcb) {
   redisContext *c = &(ac->c);
   dict *callbacks;
-  redisCallback *cb = NULL;
+  redisCallback *cb = nullptr;
   dictEntry *de;
   int pvariant;
   char *stype;
-  sds sname = NULL;
+  sds sname = nullptr;
 
   /* Match reply with the expected format of a pushed message.
    * The type and number of elements (3 to 4) are specified at:
@@ -493,10 +494,10 @@ static int __redisGetSubscribeCallback(redisAsyncContext *ac, redisReply *reply,
     /* Locate the right callback */
     if (reply->element[1]->type == REDIS_REPLY_STRING) {
       sname = sdsnewlen(reply->element[1]->str, reply->element[1]->len);
-      if (sname == NULL)
+      if (sname == nullptr)
         goto oom;
 
-      if ((de = dictFind(callbacks, sname)) != NULL) {
+      if ((de = dictFind(callbacks, sname)) != nullptr) {
         cb = dictGetEntryVal(de);
         memcpy(dstcb, cb, sizeof(*dstcb));
       }
@@ -504,11 +505,11 @@ static int __redisGetSubscribeCallback(redisAsyncContext *ac, redisReply *reply,
 
     /* If this is an subscribe reply decrease pending counter. */
     if (strcasecmp(stype + pvariant, "subscribe") == 0) {
-      assert(cb != NULL);
+      assert(cb != nullptr);
       cb->pending_subs -= 1;
 
     } else if (strcasecmp(stype + pvariant, "unsubscribe") == 0) {
-      if (cb == NULL)
+      if (cb == nullptr)
         ac->sub.pending_unsubs -= 1;
       else if (cb->pending_subs == 0)
         dictDelete(callbacks, sname);
@@ -567,15 +568,15 @@ static int redisIsSubscribeReply(redisReply *reply) {
 
 void redisProcessCallbacks(redisAsyncContext *ac) {
   redisContext *c = &(ac->c);
-  void *reply = NULL;
+  void *reply = nullptr;
   int status;
 
   while ((status = redisGetReply(c, &reply)) == REDIS_OK) {
-    if (reply == NULL) {
+    if (reply == nullptr) {
       /* When the connection is being disconnected and there are
        * no more replies, this is the cue to really disconnect. */
       if (c->flags & REDIS_DISCONNECTING && sdslen(c->obuf) == 0 &&
-          ac->replies.head == NULL) {
+          ac->replies.head == nullptr) {
         __redisAsyncDisconnect(ac);
         return;
       }
@@ -600,7 +601,7 @@ void redisProcessCallbacks(redisAsyncContext *ac) {
 
     /* Even if the context is subscribed, pending regular
      * callbacks will get a reply before pub/sub messages arrive. */
-    redisCallback cb = {NULL, NULL, 0, 0, NULL};
+    redisCallback cb = {nullptr, nullptr, 0, 0, nullptr};
     if (__redisShiftCallback(&ac->replies, &cb) != REDIS_OK) {
       /*
        * A spontaneous reply in a not-subscribed context can be the error
@@ -632,7 +633,7 @@ void redisProcessCallbacks(redisAsyncContext *ac) {
         __redisGetSubscribeCallback(ac, reply, &cb);
     }
 
-    if (cb.fn != NULL) {
+    if (cb.fn != nullptr) {
       __redisRunCallback(ac, &cb, reply);
       if (!(c->flags & REDIS_NO_AUTO_FREE_REPLIES)) {
         c->reader->fn->freeObject(reply);
@@ -644,7 +645,7 @@ void redisProcessCallbacks(redisAsyncContext *ac) {
         return;
       }
     } else {
-      /* No callback for this reply. This can either be a NULL callback,
+      /* No callback for this reply. This can either be a nullptr callback,
        * or there were no callbacks to begin with. Either way, don't
        * abort with an error, but simply ignore it because the client
        * doesn't know what the server will spit out over the wire. */
@@ -781,7 +782,7 @@ void redisAsyncHandleTimeout(redisAsyncContext *ac) {
   assert(!(c->flags & REDIS_IN_CALLBACK));
 
   if ((c->flags & REDIS_CONNECTED)) {
-    if (ac->replies.head == NULL && ac->sub.replies.head == NULL) {
+    if (ac->replies.head == nullptr && ac->sub.replies.head == nullptr) {
       /* Nothing to do - just an idle timeout */
       return;
     }
@@ -803,7 +804,7 @@ void redisAsyncHandleTimeout(redisAsyncContext *ac) {
   }
 
   while (__redisShiftCallback(&ac->replies, &cb) == REDIS_OK) {
-    __redisRunCallback(ac, &cb, NULL);
+    __redisRunCallback(ac, &cb, nullptr);
   }
 
   /**
@@ -820,11 +821,11 @@ static const char *nextArgument(const char *start, const char **str,
   const char *p = start;
   if (p[0] != '$') {
     p = strchr(p, '$');
-    if (p == NULL)
-      return NULL;
+    if (p == nullptr)
+      return nullptr;
   }
 
-  *len = (int)strtol(p + 1, NULL, 10);
+  *len = (int)strtol(p + 1, nullptr, 10);
   p = strchr(p, '\r');
   assert(p);
   *str = p + 2;
@@ -861,7 +862,7 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
 
   /* Find out which command will be appended. */
   p = nextArgument(cmd, &cstr, &clen);
-  assert(p != NULL);
+  assert(p != nullptr);
   hasnext = (p[0] == '$');
   pvariant = (tolower(cstr[0]) == 'p') ? 1 : 0;
   cstr += pvariant;
@@ -871,9 +872,9 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
     c->flags |= REDIS_SUBSCRIBED;
 
     /* Add every channel/pattern to the list of subscription callbacks. */
-    while ((p = nextArgument(p, &astr, &alen)) != NULL) {
+    while ((p = nextArgument(p, &astr, &alen)) != nullptr) {
       sname = sdsnewlen(astr, alen);
-      if (sname == NULL)
+      if (sname == nullptr)
         goto oom;
 
       if (pvariant)
@@ -883,7 +884,7 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
 
       de = dictFind(cbdict, sname);
 
-      if (de != NULL) {
+      if (de != nullptr) {
         existcb = dictGetEntryVal(de);
         cb.pending_subs = existcb->pending_subs + 1;
       }
@@ -907,13 +908,13 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
     if (hasnext) {
       /* Send an unsubscribe with specific channels/patterns.
        * Bookkeeping the number of expected replies */
-      while ((p = nextArgument(p, &astr, &alen)) != NULL) {
+      while ((p = nextArgument(p, &astr, &alen)) != nullptr) {
         sname = sdsnewlen(astr, alen);
-        if (sname == NULL)
+        if (sname == nullptr)
           goto oom;
 
         de = dictFind(cbdict, sname);
-        if (de != NULL) {
+        if (de != nullptr) {
           existcb = dictGetEntryVal(de);
           if (existcb->unsubscribe_sent == 0)
             existcb->unsubscribe_sent = 1;
@@ -931,7 +932,7 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
        * Bookkeeping the number of expected replies */
       int no_subs = 1;
       dictInitIterator(&it, cbdict);
-      while ((de = dictNext(&it)) != NULL) {
+      while ((de = dictNext(&it)) != nullptr) {
         existcb = dictGetEntryVal(de);
         if (existcb->unsubscribe_sent == 0) {
           existcb->unsubscribe_sent = 1;
@@ -1030,7 +1031,7 @@ redisAsyncPushFn *redisAsyncSetPushCallback(redisAsyncContext *ac,
 int redisAsyncSetTimeout(redisAsyncContext *ac, struct timeval tv) {
   if (!ac->c.command_timeout) {
     ac->c.command_timeout = hi_calloc(1, sizeof(tv));
-    if (ac->c.command_timeout == NULL) {
+    if (ac->c.command_timeout == nullptr) {
       __redisSetError(&ac->c, REDIS_ERR_OOM, "Out of memory");
       __redisAsyncCopyError(ac);
       return REDIS_ERR;

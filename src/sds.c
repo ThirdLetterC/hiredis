@@ -71,7 +71,7 @@ static inline char sdsReqType(size_t string_size) {
 
 /* Create a new sds string with the content specified by the 'init' pointer
  * and 'initlen'.
- * If NULL is used for 'init' the string is initialized with zero bytes.
+ * If nullptr is used for 'init' the string is initialized with zero bytes.
  *
  * The string is always null-terminated (all the sds strings are, always) so
  * even if you create an sds string with:
@@ -93,10 +93,10 @@ sds sdsnewlen(const void *init, size_t initlen) {
   unsigned char *fp; /* flags pointer. */
 
   if (hdrlen + initlen + 1 <= initlen)
-    return NULL; /* Catch size_t overflow */
+    return nullptr; /* Catch size_t overflow */
   sh = s_malloc(hdrlen + initlen + 1);
-  if (sh == NULL)
-    return NULL;
+  if (sh == nullptr)
+    return nullptr;
   if (!init)
     memset(sh, 0, hdrlen + initlen + 1);
   s = (char *)sh + hdrlen;
@@ -143,20 +143,20 @@ sds sdsnewlen(const void *init, size_t initlen) {
 
 /* Create an empty (zero length) sds string. Even in this case the string
  * always has an implicit null term. */
-sds sdsempty(void) { return sdsnewlen("", 0); }
+sds sdsempty() { return sdsnewlen("", 0); }
 
 /* Create a new sds string starting from a null terminated C string. */
 sds sdsnew(const char *init) {
-  size_t initlen = (init == NULL) ? 0 : strlen(init);
+  size_t initlen = (init == nullptr) ? 0 : strlen(init);
   return sdsnewlen(init, initlen);
 }
 
 /* Duplicate an sds string. */
 sds sdsdup(const sds s) { return sdsnewlen(s, sdslen(s)); }
 
-/* Free an sds string. No operation is performed if 's' is NULL. */
+/* Free an sds string. No operation is performed if 's' is nullptr. */
 void sdsfree(sds s) {
-  if (s == NULL)
+  if (s == nullptr)
     return;
   s_free((char *)s - sdsHdrSize(s[-1]));
 }
@@ -210,7 +210,7 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
   sh = (char *)s - sdsHdrSize(oldtype);
   reqlen = newlen = (len + addlen);
   if (newlen <= len)
-    return NULL; /* Catch size_t overflow */
+    return nullptr; /* Catch size_t overflow */
   if (newlen < SDS_MAX_PREALLOC)
     newlen *= 2;
   else
@@ -226,18 +226,18 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
 
   hdrlen = sdsHdrSize(type);
   if (hdrlen + newlen + 1 <= reqlen)
-    return NULL; /* Catch size_t overflow */
+    return nullptr; /* Catch size_t overflow */
   if (oldtype == type) {
     newsh = s_realloc(sh, hdrlen + newlen + 1);
-    if (newsh == NULL)
-      return NULL;
+    if (newsh == nullptr)
+      return nullptr;
     s = (char *)newsh + hdrlen;
   } else {
     /* Since the header size changes, need to move the string forward,
      * and can't use realloc */
     newsh = s_malloc(hdrlen + newlen + 1);
-    if (newsh == NULL)
-      return NULL;
+    if (newsh == nullptr)
+      return nullptr;
     memcpy((char *)newsh + hdrlen, s, len + 1);
     s_free(sh);
     s = (char *)newsh + hdrlen;
@@ -265,13 +265,13 @@ sds sdsRemoveFreeSpace(sds s) {
   hdrlen = sdsHdrSize(type);
   if (oldtype == type) {
     newsh = s_realloc(sh, hdrlen + len + 1);
-    if (newsh == NULL)
-      return NULL;
+    if (newsh == nullptr)
+      return nullptr;
     s = (char *)newsh + hdrlen;
   } else {
     newsh = s_malloc(hdrlen + len + 1);
-    if (newsh == NULL)
-      return NULL;
+    if (newsh == nullptr)
+      return nullptr;
     memcpy((char *)newsh + hdrlen, s, len + 1);
     s_free(sh);
     s = (char *)newsh + hdrlen;
@@ -379,8 +379,8 @@ sds sdsgrowzero(sds s, size_t len) {
   if (len <= curlen)
     return s;
   s = sdsMakeRoomFor(s, len - curlen);
-  if (s == NULL)
-    return NULL;
+  if (s == nullptr)
+    return nullptr;
 
   /* Make sure added region doesn't contain garbage */
   memset(s + curlen, 0, (len - curlen + 1)); /* also set trailing \0 byte */
@@ -397,8 +397,8 @@ sds sdscatlen(sds s, const void *t, size_t len) {
   size_t curlen = sdslen(s);
 
   s = sdsMakeRoomFor(s, len);
-  if (s == NULL)
-    return NULL;
+  if (s == nullptr)
+    return nullptr;
   memcpy(s + curlen, t, len);
   sdssetlen(s, curlen + len);
   s[curlen + len] = '\0';
@@ -422,8 +422,8 @@ sds sdscatsds(sds s, const sds t) { return sdscatlen(s, t, sdslen(t)); }
 sds sdscpylen(sds s, const char *t, size_t len) {
   if (sdsalloc(s) < len) {
     s = sdsMakeRoomFor(s, len - sdslen(s));
-    if (s == NULL)
-      return NULL;
+    if (s == nullptr)
+      return nullptr;
   }
   memcpy(s, t, len);
   s[len] = '\0';
@@ -441,7 +441,7 @@ sds sdscpy(sds s, const char *t) { return sdscpylen(s, t, strlen(t)); }
  *
  * The function returns the length of the null-terminated string
  * representation stored at 's'. */
-#define SDS_LLSTR_SIZE 21
+static constexpr size_t SDS_LLSTR_SIZE = 21;
 int sdsll2str(char *s, long long value) {
   char *p, aux;
   unsigned long long v;
@@ -524,8 +524,8 @@ sds sdscatvprintf(sds s, const char *fmt, va_list ap) {
    * If not possible we revert to heap allocation. */
   if (buflen > sizeof(staticbuf)) {
     buf = s_malloc(buflen);
-    if (buf == NULL)
-      return NULL;
+    if (buf == nullptr)
+      return nullptr;
   } else {
     buflen = sizeof(staticbuf);
   }
@@ -542,8 +542,8 @@ sds sdscatvprintf(sds s, const char *fmt, va_list ap) {
         s_free(buf);
       buflen *= 2;
       buf = s_malloc(buflen);
-      if (buf == NULL)
-        return NULL;
+      if (buf == nullptr)
+        return nullptr;
       continue;
     }
     break;
@@ -613,7 +613,7 @@ sds sdscatfmt(sds s, char const *fmt, ...) {
     /* Make sure there is always space for at least 1 char. */
     if (sdsavail(s) == 0) {
       s = sdsMakeRoomFor(s, 1);
-      if (s == NULL)
+      if (s == nullptr)
         goto fmt_error;
     }
 
@@ -628,7 +628,7 @@ sds sdscatfmt(sds s, char const *fmt, ...) {
         l = (next == 's') ? strlen(str) : sdslen(str);
         if (sdsavail(s) < l) {
           s = sdsMakeRoomFor(s, l);
-          if (s == NULL)
+          if (s == nullptr)
             goto fmt_error;
         }
         memcpy(s + i, str, l);
@@ -646,7 +646,7 @@ sds sdscatfmt(sds s, char const *fmt, ...) {
           l = sdsll2str(buf, num);
           if (sdsavail(s) < l) {
             s = sdsMakeRoomFor(s, l);
-            if (s == NULL)
+            if (s == nullptr)
               goto fmt_error;
           }
           memcpy(s + i, buf, l);
@@ -665,7 +665,7 @@ sds sdscatfmt(sds s, char const *fmt, ...) {
           l = sdsull2str(buf, unum);
           if (sdsavail(s) < l) {
             s = sdsMakeRoomFor(s, l);
-            if (s == NULL)
+            if (s == nullptr)
               goto fmt_error;
           }
           memcpy(s + i, buf, l);
@@ -694,7 +694,7 @@ sds sdscatfmt(sds s, char const *fmt, ...) {
 
 fmt_error:
   va_end(ap);
-  return NULL;
+  return nullptr;
 }
 
 /* Remove the part of the string from left and from right composed just of
@@ -829,7 +829,7 @@ int sdscmp(const sds s1, const sds s2) {
  * by reference to the number of tokens returned.
  *
  * On out of memory, zero length string, zero length
- * separator, NULL is returned.
+ * separator, nullptr is returned.
  *
  * Note that 'sep' is able to split a string using
  * a multi-character separator. For example
@@ -846,11 +846,11 @@ sds *sdssplitlen(const char *s, int len, const char *sep, int seplen,
   sds *tokens;
 
   if (seplen < 1 || len < 0)
-    return NULL;
+    return nullptr;
 
   tokens = s_malloc(sizeof(sds) * slots);
-  if (tokens == NULL)
-    return NULL;
+  if (tokens == nullptr)
+    return nullptr;
 
   if (len == 0) {
     *count = 0;
@@ -863,7 +863,7 @@ sds *sdssplitlen(const char *s, int len, const char *sep, int seplen,
 
       slots *= 2;
       newtokens = s_realloc(tokens, sizeof(sds) * slots);
-      if (newtokens == NULL)
+      if (newtokens == nullptr)
         goto cleanup;
       tokens = newtokens;
     }
@@ -871,7 +871,7 @@ sds *sdssplitlen(const char *s, int len, const char *sep, int seplen,
     if ((seplen == 1 && *(s + j) == sep[0]) ||
         (memcmp(s + j, sep, seplen) == 0)) {
       tokens[elements] = sdsnewlen(s + start, j - start);
-      if (tokens[elements] == NULL)
+      if (tokens[elements] == nullptr)
         goto cleanup;
       elements++;
       start = j + seplen;
@@ -880,7 +880,7 @@ sds *sdssplitlen(const char *s, int len, const char *sep, int seplen,
   }
   /* Add the final element. We are sure there is room in the tokens array. */
   tokens[elements] = sdsnewlen(s + start, len - start);
-  if (tokens[elements] == NULL)
+  if (tokens[elements] == nullptr)
     goto cleanup;
   elements++;
   *count = elements;
@@ -892,11 +892,11 @@ cleanup: {
     sdsfree(tokens[i]);
   s_free(tokens);
   *count = 0;
-  return NULL;
+  return nullptr;
 }
 }
 
-/* Free the result returned by sdssplitlen(), or do nothing if 'tokens' is NULL.
+/* Free the result returned by sdssplitlen(), or do nothing if 'tokens' is nullptr.
  */
 void sdsfreesplitres(sds *tokens, int count) {
   if (!tokens)
@@ -1009,14 +1009,14 @@ int hex_digit_to_int(char c) {
  * a quoted string in the same format sdssplitargs() is able to parse.
  *
  * The function returns the allocated tokens on success, even when the
- * input string is empty, or NULL if the input contains unbalanced
+ * input string is empty, or nullptr if the input contains unbalanced
  * quotes or closed quotes followed by non space characters
  * as in: "foo"bar or "foo'
  */
 sds *sdssplitargs(const char *line, int *argc) {
   const char *p = line;
-  char *current = NULL;
-  char **vector = NULL;
+  char *current = nullptr;
+  char **vector = nullptr;
 
   *argc = 0;
   while (1) {
@@ -1029,7 +1029,7 @@ sds *sdssplitargs(const char *line, int *argc) {
       int insq = 0; /* set to 1 if we are in 'single quotes' */
       int done = 0;
 
-      if (current == NULL)
+      if (current == nullptr)
         current = sdsempty();
       while (!done) {
         if (inq) {
@@ -1120,19 +1120,19 @@ sds *sdssplitargs(const char *line, int *argc) {
       /* add the token to the vector */
       {
         char **new_vector = s_realloc(vector, ((*argc) + 1) * sizeof(char *));
-        if (new_vector == NULL) {
+        if (new_vector == nullptr) {
           s_free(vector);
-          return NULL;
+          return nullptr;
         }
 
         vector = new_vector;
         vector[*argc] = current;
         (*argc)++;
-        current = NULL;
+        current = nullptr;
       }
     } else {
-      /* Even on empty input string return something not NULL. */
-      if (vector == NULL)
+      /* Even on empty input string return something not nullptr. */
+      if (vector == nullptr)
         vector = s_malloc(sizeof(void *));
       return vector;
     }
@@ -1145,7 +1145,7 @@ err:
   if (current)
     sdsfree(current);
   *argc = 0;
-  return NULL;
+  return nullptr;
 }
 
 /* Modify the string substituting all the occurrences of the set of
@@ -1213,7 +1213,7 @@ void sds_free(void *ptr) { s_free(ptr); }
 #include <stdio.h>
 
 #define UNUSED(x) (void)(x)
-int sdsTest(void) {
+int sdsTest() {
   {
     sds x = sdsnew("foo"), y;
 
@@ -1378,5 +1378,5 @@ int sdsTest(void) {
 #endif
 
 #ifdef SDS_TEST_MAIN
-int main(void) { return sdsTest(); }
+int main() { return sdsTest(); }
 #endif

@@ -43,7 +43,7 @@
 
 static void assertReplyAndFree(redisContext *context, redisReply *reply,
                                int type) {
-  if (reply == NULL)
+  if (reply == nullptr)
     panicAbort("NULL reply from server (error: %s)", context->errstr);
 
   if (reply->type != type) {
@@ -59,7 +59,7 @@ static void assertReplyAndFree(redisContext *context, redisReply *reply,
 /* Switch to the RESP3 protocol and enable client tracking */
 static void enableClientTracking(redisContext *c) {
   redisReply *reply = redisCommand(c, "HELLO 3");
-  if (reply == NULL || c->err) {
+  if (reply == nullptr || c->err) {
     panicAbort("NULL reply or server error (error: %s)", c->errstr);
   }
 
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
   o.push_cb = pushReplyHandler;
 
   c = redisConnectWithOptions(&o);
-  if (c == NULL || c->err)
+  if (c == nullptr || c->err)
     panicAbort("Connection error:  %s", c ? c->errstr : "OOM");
 
   /* Enable RESP3 and turn on client tracking */

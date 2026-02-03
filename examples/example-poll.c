@@ -11,7 +11,7 @@ static int exit_loop = 0;
 
 void getCallback(redisAsyncContext *c, void *r, void *privdata) {
   redisReply *reply = r;
-  if (reply == NULL)
+  if (reply == nullptr)
     return;
   printf("argv[%s]: %s\n", (char *)privdata, reply->str);
 
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
   redisPollAttach(c);
   redisAsyncSetConnectCallback(c, connectCallback);
   redisAsyncSetDisconnectCallback(c, disconnectCallback);
-  redisAsyncCommand(c, NULL, NULL, "SET key %b", argv[argc - 1],
+  redisAsyncCommand(c, nullptr, nullptr, "SET key %b", argv[argc - 1],
                     strlen(argv[argc - 1]));
   redisAsyncCommand(c, getCallback, (char *)"end-1", "GET key");
   while (!exit_loop) {

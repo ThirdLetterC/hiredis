@@ -41,64 +41,66 @@
 #include <sys/time.h>  /* for struct timeval */
 #include <sys/types.h> /* for ssize_t */
 
-#define HIREDIS_MAJOR 1
-#define HIREDIS_MINOR 3
-#define HIREDIS_PATCH 0
-#define HIREDIS_SONAME 1.3.0
+[[maybe_unused]] static constexpr int HIREDIS_MAJOR = 1;
+[[maybe_unused]] static constexpr int HIREDIS_MINOR = 3;
+[[maybe_unused]] static constexpr int HIREDIS_PATCH = 0;
+[[maybe_unused]] static constexpr const char HIREDIS_SONAME[] = "1.3.0";
 
 /* Connection type can be blocking or non-blocking and is set in the
  * least significant bit of the flags field in redisContext. */
-#define REDIS_BLOCK 0x1
+[[maybe_unused]] static constexpr int REDIS_BLOCK = 0b0000'0001;
 
 /* Connection may be disconnected before being free'd. The second bit
  * in the flags field is set when the context is connected. */
-#define REDIS_CONNECTED 0x2
+[[maybe_unused]] static constexpr int REDIS_CONNECTED = 0b0000'0010;
 
 /* The async API might try to disconnect cleanly and flush the output
  * buffer and read all subsequent replies before disconnecting.
  * This flag means no new commands can come in and the connection
  * should be terminated once all replies have been read. */
-#define REDIS_DISCONNECTING 0x4
+[[maybe_unused]] static constexpr int REDIS_DISCONNECTING = 0b0000'0100;
 
 /* Flag specific to the async API which means that the context should be clean
  * up as soon as possible. */
-#define REDIS_FREEING 0x8
+[[maybe_unused]] static constexpr int REDIS_FREEING = 0b0000'1000;
 
 /* Flag that is set when an async callback is executed. */
-#define REDIS_IN_CALLBACK 0x10
+[[maybe_unused]] static constexpr int REDIS_IN_CALLBACK = 0b0001'0000;
 
 /* Flag that is set when the async context has one or more subscriptions. */
-#define REDIS_SUBSCRIBED 0x20
+[[maybe_unused]] static constexpr int REDIS_SUBSCRIBED = 0b0010'0000;
 
 /* Flag that is set when monitor mode is active */
-#define REDIS_MONITORING 0x40
+[[maybe_unused]] static constexpr int REDIS_MONITORING = 0b0100'0000;
 
 /* Flag that is set when we should set SO_REUSEADDR before calling bind() */
-#define REDIS_REUSEADDR 0x80
+[[maybe_unused]] static constexpr int REDIS_REUSEADDR = 0b1000'0000;
 
 /* Flag that is set when the async connection supports push replies. */
-#define REDIS_SUPPORTS_PUSH 0x100
+[[maybe_unused]] static constexpr int REDIS_SUPPORTS_PUSH = 0b0001'0000'0000;
 
 /**
  * Flag that indicates the user does not want the context to
  * be automatically freed upon error
  */
-#define REDIS_NO_AUTO_FREE 0x200
+[[maybe_unused]] static constexpr int REDIS_NO_AUTO_FREE = 0b0010'0000'0000;
 
 /* Flag that indicates the user does not want replies to be automatically freed
  */
-#define REDIS_NO_AUTO_FREE_REPLIES 0x400
+[[maybe_unused]] static constexpr int REDIS_NO_AUTO_FREE_REPLIES =
+    0b0100'0000'0000;
 
 /* Flags to prefer IPv6 or IPv4 when doing DNS lookup. (If both are set,
  * AF_UNSPEC is used.) */
-#define REDIS_PREFER_IPV4 0x800
-#define REDIS_PREFER_IPV6 0x1000
+[[maybe_unused]] static constexpr int REDIS_PREFER_IPV4 = 0b1000'0000'0000;
+[[maybe_unused]] static constexpr int REDIS_PREFER_IPV6 =
+    0b0001'0000'0000'0000;
 
-#define REDIS_KEEPALIVE_INTERVAL 15 /* seconds */
+[[maybe_unused]] static constexpr int REDIS_KEEPALIVE_INTERVAL = 15; /* seconds */
 
 /* number of times we retry to connect in the case of EADDRNOTAVAIL and
  * SO_REUSEADDR is being used. */
-#define REDIS_CONNECT_RETRIES 10
+[[maybe_unused]] static constexpr int REDIS_CONNECT_RETRIES = 10;
 
 /* Forward declarations for structs defined elsewhere */
 struct redisAsyncContext;
@@ -128,7 +130,7 @@ typedef struct redisReply {
   struct redisReply **element; /* elements vector for REDIS_REPLY_ARRAY */
 } redisReply;
 
-redisReader *redisReaderCreate(void);
+[[nodiscard]] redisReader *redisReaderCreate();
 
 /* Function to free the reply objects hiredis returns by default. */
 void freeReplyObject(void *reply);
@@ -147,30 +149,32 @@ enum redisConnectionType { REDIS_CONN_TCP, REDIS_CONN_UNIX, REDIS_CONN_USERFD };
 
 struct redisSsl;
 
-#define REDIS_OPT_NONBLOCK 0x01
-#define REDIS_OPT_REUSEADDR 0x02
-#define REDIS_OPT_NOAUTOFREE                                                   \
-  0x04 /* Don't automatically free the async                                   \
-        * object on a connection failure, or                                   \
-        * other implicit conditions. Only free                                 \
-        * on an explicit call to disconnect()                                  \
-        * or free() */
-#define REDIS_OPT_NO_PUSH_AUTOFREE                                             \
-  0x08                                   /* Don't automatically intercept and  \
-                                          * free RESP3 PUSH replies. */
-#define REDIS_OPT_NOAUTOFREEREPLIES 0x10 /* Don't automatically free replies.  \
-                                          */
-#define REDIS_OPT_PREFER_IPV4 0x20       /* Prefer IPv4 in DNS lookups. */
-#define REDIS_OPT_PREFER_IPV6 0x40       /* Prefer IPv6 in DNS lookups. */
-#define REDIS_OPT_PREFER_IP_UNSPEC                                             \
-  (REDIS_OPT_PREFER_IPV4 | REDIS_OPT_PREFER_IPV6)
-#define REDIS_OPT_SET_SOCK_CLOEXEC                                             \
-  0x80 /* Set SOCK_CLOEXEC on socket file descriptor. */
+[[maybe_unused]] static constexpr int REDIS_OPT_NONBLOCK = 0b0000'0001;
+[[maybe_unused]] static constexpr int REDIS_OPT_REUSEADDR = 0b0000'0010;
+[[maybe_unused]] static constexpr int REDIS_OPT_NOAUTOFREE =
+    0b0000'0100; /* Don't automatically free the async
+                  * object on a connection failure, or
+                  * other implicit conditions. Only free
+                  * on an explicit call to disconnect()
+                  * or free() */
+[[maybe_unused]] static constexpr int REDIS_OPT_NO_PUSH_AUTOFREE =
+    0b0000'1000; /* Don't automatically intercept and
+                  * free RESP3 PUSH replies. */
+[[maybe_unused]] static constexpr int REDIS_OPT_NOAUTOFREEREPLIES =
+    0b0001'0000; /* Don't automatically free replies. */
+[[maybe_unused]] static constexpr int REDIS_OPT_PREFER_IPV4 =
+    0b0010'0000; /* Prefer IPv4 in DNS lookups. */
+[[maybe_unused]] static constexpr int REDIS_OPT_PREFER_IPV6 =
+    0b0100'0000; /* Prefer IPv6 in DNS lookups. */
+[[maybe_unused]] static constexpr int REDIS_OPT_PREFER_IP_UNSPEC =
+    REDIS_OPT_PREFER_IPV4 | REDIS_OPT_PREFER_IPV6;
+[[maybe_unused]] static constexpr int REDIS_OPT_SET_SOCK_CLOEXEC =
+    0b1000'0000; /* Set SOCK_CLOEXEC on socket file descriptor. */
 
 /* In Unix systems a file descriptor is a regular signed int, with -1
  * representing an invalid descriptor. */
 typedef int redisFD;
-#define REDIS_INVALID_FD -1
+[[maybe_unused]] static constexpr int REDIS_INVALID_FD = -1;
 
 typedef struct {
   /*
@@ -180,9 +184,9 @@ typedef struct {
   int type;
   /* bit field of REDIS_OPT_xxx */
   int options;
-  /* timeout value for connect operation. If NULL, no timeout is used */
+  /* timeout value for connect operation. If nullptr, no timeout is used */
   const struct timeval *connect_timeout;
-  /* timeout value for commands. If NULL, no timeout is used.  This can be
+  /* timeout value for commands. If nullptr, no timeout is used.  This can be
    * updated at runtime with redisSetTimeout/redisAsyncSetTimeout. */
   const struct timeval *command_timeout;
   union {
@@ -287,20 +291,22 @@ typedef struct redisContext {
   redisPushFn *push_cb;
 } redisContext;
 
-redisContext *redisConnectWithOptions(const redisOptions *options);
-redisContext *redisConnect(const char *ip, int port);
-redisContext *redisConnectWithTimeout(const char *ip, int port,
-                                      const struct timeval tv);
-redisContext *redisConnectNonBlock(const char *ip, int port);
-redisContext *redisConnectBindNonBlock(const char *ip, int port,
-                                       const char *source_addr);
-redisContext *redisConnectBindNonBlockWithReuse(const char *ip, int port,
-                                                const char *source_addr);
-redisContext *redisConnectUnix(const char *path);
-redisContext *redisConnectUnixWithTimeout(const char *path,
-                                          const struct timeval tv);
-redisContext *redisConnectUnixNonBlock(const char *path);
-redisContext *redisConnectFd(redisFD fd);
+[[nodiscard]] redisContext *
+redisConnectWithOptions(const redisOptions *options);
+[[nodiscard]] redisContext *redisConnect(const char *ip, int port);
+[[nodiscard]] redisContext *
+redisConnectWithTimeout(const char *ip, int port, const struct timeval tv);
+[[nodiscard]] redisContext *redisConnectNonBlock(const char *ip, int port);
+[[nodiscard]] redisContext *redisConnectBindNonBlock(const char *ip, int port,
+                                                     const char *source_addr);
+[[nodiscard]] redisContext *
+redisConnectBindNonBlockWithReuse(const char *ip, int port,
+                                  const char *source_addr);
+[[nodiscard]] redisContext *redisConnectUnix(const char *path);
+[[nodiscard]] redisContext *
+redisConnectUnixWithTimeout(const char *path, const struct timeval tv);
+[[nodiscard]] redisContext *redisConnectUnixNonBlock(const char *path);
+[[nodiscard]] redisContext *redisConnectFd(redisFD fd);
 
 /**
  * Reconnect the given context using the saved information.
@@ -343,13 +349,15 @@ int redisAppendCommandArgv(redisContext *c, int argc, const char **argv,
 
 /* Issue a command to Redis. In a blocking context, it is identical to calling
  * redisAppendCommand, followed by redisGetReply. The function will return
- * NULL if there was an error in performing the request, otherwise it will
+ * nullptr if there was an error in performing the request, otherwise it will
  * return the reply. In a non-blocking context, it is identical to calling
- * only redisAppendCommand and will always return NULL. */
-void *redisvCommand(redisContext *c, const char *format, va_list ap);
-void *redisCommand(redisContext *c, const char *format, ...);
-void *redisCommandArgv(redisContext *c, int argc, const char **argv,
-                       const size_t *argvlen);
+ * only redisAppendCommand and will always return nullptr. */
+[[nodiscard]] void *redisvCommand(redisContext *c, const char *format,
+                                  va_list ap);
+[[nodiscard]] void *redisCommand(redisContext *c, const char *format, ...);
+[[nodiscard]] void *redisCommandArgv(redisContext *c, int argc,
+                                     const char **argv,
+                                     const size_t *argvlen);
 
 #ifdef __cplusplus
 }

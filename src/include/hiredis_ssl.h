@@ -74,11 +74,13 @@ typedef enum {
  * Some Redis clients disable peer verification if there are no
  * certificates specified.
  */
-#define REDIS_SSL_VERIFY_NONE 0x00
-#define REDIS_SSL_VERIFY_PEER 0x01
-#define REDIS_SSL_VERIFY_FAIL_IF_NO_PEER_CERT 0x02
-#define REDIS_SSL_VERIFY_CLIENT_ONCE 0x04
-#define REDIS_SSL_VERIFY_POST_HANDSHAKE 0x08
+[[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_NONE = 0b0000;
+[[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_PEER = 0b0001;
+[[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_FAIL_IF_NO_PEER_CERT =
+    0b0010;
+[[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_CLIENT_ONCE = 0b0100;
+[[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_POST_HANDSHAKE =
+    0b1000;
 
 /* Options to create an OpenSSL context. */
 typedef struct {
@@ -103,7 +105,7 @@ const char *redisSSLContextGetError(redisSSLContextError error);
  * should call this function only once, and only if OpenSSL is not directly
  * initialized elsewhere.
  */
-int redisInitOpenSSL(void);
+int redisInitOpenSSL();
 
 /**
  * Helper function to initialize an OpenSSL context that can be used
@@ -123,15 +125,14 @@ int redisInitOpenSSL(void);
  * (SNI) TLS extension.
  *
  * If error is non-null, it will be populated in case the context creation fails
- * (returning a NULL).
+ * (returning a nullptr).
  */
 
-redisSSLContext *redisCreateSSLContext(const char *cacert_filename,
-                                       const char *capath,
-                                       const char *cert_filename,
-                                       const char *private_key_filename,
-                                       const char *server_name,
-                                       redisSSLContextError *error);
+[[nodiscard]] redisSSLContext *
+redisCreateSSLContext(const char *cacert_filename, const char *capath,
+                      const char *cert_filename,
+                      const char *private_key_filename,
+                      const char *server_name, redisSSLContextError *error);
 
 /**
  * Helper function to initialize an OpenSSL context that can be used
@@ -141,10 +142,11 @@ redisSSLContext *redisCreateSSLContext(const char *cacert_filename,
  * options contains a structure of SSL options to use.
  *
  * If error is non-null, it will be populated in case the context creation fails
- * (returning a NULL).
+ * (returning a nullptr).
  */
-redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
-                                                  redisSSLContextError *error);
+[[nodiscard]] redisSSLContext *
+redisCreateSSLContextWithOptions(redisSSLOptions *options,
+                                 redisSSLContextError *error);
 
 /**
  * Free a previously created OpenSSL context.

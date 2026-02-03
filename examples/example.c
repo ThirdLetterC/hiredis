@@ -32,7 +32,7 @@ static void example_argv_command(redisContext *c, size_t n) {
   reply =
       redisCommandArgv(c, n + 2, (const char **)argv, (const size_t *)argvlen);
 
-  if (reply == NULL || c->err) {
+  if (reply == nullptr || c->err) {
     fprintf(stderr, "Error:  Couldn't execute redisCommandArgv\n");
     exit(1);
   }
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
   } else {
     c = redisConnectWithTimeout(hostname, port, timeout);
   }
-  if (c == NULL || c->err) {
+  if (c == nullptr || c->err) {
     if (c) {
       printf("Connection error: %s\n", c->errstr);
       redisFree(c);

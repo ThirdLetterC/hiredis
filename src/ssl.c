@@ -54,7 +54,7 @@ struct redisSSLContext {
   /* Associated OpenSSL SSL_CTX as created by redisCreateSSLContext() */
   SSL_CTX *ssl_ctx;
 
-  /* Requested SNI, or NULL */
+  /* Requested SNI, or nullptr */
   char *server_name;
 };
 
@@ -96,7 +96,7 @@ redisContextFuncs redisContextSSLFuncs;
 
 #ifdef HIREDIS_USE_CRYPTO_LOCKS
 typedef pthread_mutex_t sslLockType;
-static void sslLockInit(sslLockType *l) { pthread_mutex_init(l, NULL); }
+static void sslLockInit(sslLockType *l) { pthread_mutex_init(l, nullptr); }
 static void sslLockAcquire(sslLockType *l) { pthread_mutex_lock(l); }
 static void sslLockRelease(sslLockType *l) { pthread_mutex_unlock(l); }
 
@@ -115,15 +115,15 @@ static void opensslDoLock(int mode, int lkid, const char *f, int line) {
   (void)line;
 }
 
-static int initOpensslLocks(void) {
+static int initOpensslLocks() {
   unsigned ii, nlocks;
-  if (CRYPTO_get_locking_callback() != NULL) {
+  if (CRYPTO_get_locking_callback() != nullptr) {
     /* Someone already set the callback before us. Don't destroy it! */
     return REDIS_OK;
   }
   nlocks = CRYPTO_num_locks();
   ossl_locks = hi_malloc(sizeof(*ossl_locks) * nlocks);
-  if (ossl_locks == NULL)
+  if (ossl_locks == nullptr)
     return REDIS_ERR;
 
   for (ii = 0; ii < nlocks; ii++) {
@@ -134,7 +134,7 @@ static int initOpensslLocks(void) {
 }
 #endif /* HIREDIS_USE_CRYPTO_LOCKS */
 
-int redisInitOpenSSL(void) {
+int redisInitOpenSSL() {
 #ifdef HIREDIS_USE_CRYPTO_LOCKS
   SSL_library_init();
   initOpensslLocks();
@@ -177,12 +177,12 @@ void redisFreeSSLContext(redisSSLContext *ctx) {
 
   if (ctx->server_name) {
     hi_free(ctx->server_name);
-    ctx->server_name = NULL;
+    ctx->server_name = nullptr;
   }
 
   if (ctx->ssl_ctx) {
     SSL_CTX_free(ctx->ssl_ctx);
-    ctx->ssl_ctx = NULL;
+    ctx->ssl_ctx = nullptr;
   }
 
   hi_free(ctx);
@@ -219,7 +219,7 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
   const char *server_name = options->server_name;
 
   redisSSLContext *ctx = hi_calloc(1, sizeof(redisSSLContext));
-  if (ctx == NULL)
+  if (ctx == nullptr)
     goto error;
 
   const SSL_METHOD *ssl_method;
@@ -243,10 +243,10 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
                                         SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
 #endif
 
-  SSL_CTX_set_verify(ctx->ssl_ctx, options->verify_mode, NULL);
+  SSL_CTX_set_verify(ctx->ssl_ctx, options->verify_mode, nullptr);
 
-  if ((cert_filename != NULL && private_key_filename == NULL) ||
-      (private_key_filename != NULL && cert_filename == NULL)) {
+  if ((cert_filename != nullptr && private_key_filename == nullptr) ||
+      (private_key_filename != nullptr && cert_filename == nullptr)) {
     if (error)
       *error = REDIS_SSL_CTX_CERT_KEY_REQUIRED;
     goto error;
@@ -287,7 +287,7 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
 
 error:
   redisFreeSSLContext(ctx);
-  return NULL;
+  return nullptr;
 }
 
 /**
@@ -301,7 +301,7 @@ static int redisSSLConnect(redisContext *c, SSL *ssl) {
   }
 
   redisSSL *rssl = hi_calloc(1, sizeof(redisSSL));
-  if (rssl == NULL) {
+  if (rssl == nullptr) {
     __redisSetError(c, REDIS_ERR_OOM, "Out of memory");
     return REDIS_ERR;
   }
@@ -422,7 +422,7 @@ static void redisSSLFree(void *privctx) {
     return;
   if (rsc->ssl) {
     SSL_free(rsc->ssl);
-    rsc->ssl = NULL;
+    rsc->ssl = nullptr;
   }
   hi_free(rsc);
 }
@@ -448,7 +448,7 @@ static ssize_t redisSSLRead(redisContext *c, char *buf, size_t bufcap) {
       if (errno == EINTR) {
         return 0;
       } else {
-        const char *msg = NULL;
+        const char *msg = nullptr;
         if (errno == EAGAIN) {
           msg = "Resource temporarily unavailable";
         }
@@ -463,7 +463,7 @@ static ssize_t redisSSLRead(redisContext *c, char *buf, size_t bufcap) {
     if (maybeCheckWant(rssl, err)) {
       return 0;
     } else {
-      __redisSetError(c, REDIS_ERR_IO, NULL);
+      __redisSetError(c, REDIS_ERR_IO, nullptr);
       return -1;
     }
   }
@@ -484,7 +484,7 @@ static ssize_t redisSSLWrite(redisContext *c) {
     if ((c->flags & REDIS_BLOCK) == 0 && maybeCheckWant(rssl, err)) {
       return 0;
     } else {
-      __redisSetError(c, REDIS_ERR_IO, NULL);
+      __redisSetError(c, REDIS_ERR_IO, nullptr);
       return -1;
     }
   }

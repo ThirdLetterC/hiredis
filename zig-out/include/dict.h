@@ -36,8 +36,8 @@
 #ifndef __DICT_H
 #define __DICT_H
 
-#define DICT_OK 0
-#define DICT_ERR 1
+[[maybe_unused]] static constexpr int DICT_OK = 0;
+[[maybe_unused]] static constexpr int DICT_ERR = 1;
 
 /* Unused arguments generate annoying warnings... */
 #define DICT_NOTUSED(V) ((void)V)
@@ -73,7 +73,7 @@ typedef struct dictIterator {
 } dictIterator;
 
 /* This is the initial size of every hash table */
-#define DICT_HT_INITIAL_SIZE 4
+[[maybe_unused]] static constexpr unsigned long DICT_HT_INITIAL_SIZE = 4;
 
 /* ------------------------------- Macros ------------------------------------*/
 #define dictFreeEntryVal(ht, entry)                                            \

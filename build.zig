@@ -76,18 +76,44 @@ pub fn build(b: *std.Build) void {
         .install_subdir = "adapters",
     });
 
-    if (enable_examples) {
-        const link_lib = static_lib orelse shared_lib.?;
-        addExample(b, "example", "examples/example.c", target, optimize, link_lib, cflags, false, false);
-        addExample(b, "example-push", "examples/example-push.c", target, optimize, link_lib, cflags, false, false);
-        addExample(b, "example-poll", "examples/example-poll.c", target, optimize, link_lib, cflags, false, false);
+    const examples_step = b.step("examples", "Build example programs");
+    const link_lib = static_lib orelse shared_lib.?;
 
-        if (enable_ssl) {
-            addExample(b, "example-ssl", "examples/example-ssl.c", target, optimize, link_lib, cflags, true, false);
+    {
+        const exe = addExample(b, "example", "examples/example.c", target, optimize, link_lib, cflags, false, false);
+        examples_step.dependOn(&exe.step);
+        if (enable_examples) {
+            b.installArtifact(exe);
         }
+    }
+    {
+        const exe = addExample(b, "example-push", "examples/example-push.c", target, optimize, link_lib, cflags, false, false);
+        examples_step.dependOn(&exe.step);
+        if (enable_examples) {
+            b.installArtifact(exe);
+        }
+    }
+    {
+        const exe = addExample(b, "example-poll", "examples/example-poll.c", target, optimize, link_lib, cflags, false, false);
+        examples_step.dependOn(&exe.step);
+        if (enable_examples) {
+            b.installArtifact(exe);
+        }
+    }
 
-        if (enable_libuv) {
-            addExample(b, "example-libuv", "examples/example-libuv.c", target, optimize, link_lib, cflags, false, true);
+    if (enable_ssl) {
+        const exe = addExample(b, "example-ssl", "examples/example-ssl.c", target, optimize, link_lib, cflags, true, false);
+        examples_step.dependOn(&exe.step);
+        if (enable_examples) {
+            b.installArtifact(exe);
+        }
+    }
+
+    if (enable_libuv) {
+        const exe = addExample(b, "example-libuv", "examples/example-libuv.c", target, optimize, link_lib, cflags, false, true);
+        examples_step.dependOn(&exe.step);
+        if (enable_examples) {
+            b.installArtifact(exe);
         }
     }
 }
@@ -139,7 +165,7 @@ fn addExample(
     cflags: []const []const u8,
     needs_ssl: bool,
     needs_libuv: bool,
-) void {
+) *std.Build.Step.Compile {
     const module = b.createModule(.{
         .target = target,
         .optimize = optimize,
@@ -162,5 +188,5 @@ fn addExample(
         exe.linkSystemLibrary("uv");
     }
 
-    b.installArtifact(exe);
+    return exe;
 }
