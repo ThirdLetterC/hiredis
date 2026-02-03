@@ -8,7 +8,6 @@ const base_sources = [_][]const u8{
     "src/net.c",
     "src/read.c",
     "src/sds.c",
-    "src/sockcompat.c",
 };
 
 const common_cflags = [_][]const u8{
