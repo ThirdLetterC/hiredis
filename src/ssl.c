@@ -42,7 +42,6 @@
 #include "async.h"
 #include "hiredis.h"
 #include "net.h"
-
 #include "async_private.h"
 #include "hiredis_ssl.h"
 

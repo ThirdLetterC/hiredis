@@ -133,7 +133,7 @@ static void redisLibuvCleanup(void *privdata) {
   uv_close((uv_handle_t *)&p->handle, on_handle_close);
 }
 
-static int redisLibuvAttach(redisAsyncContext *ac, uv_loop_t *loop) {
+[[maybe_unused]] static int redisLibuvAttach(redisAsyncContext *ac, uv_loop_t *loop) {
   redisContext *c = &(ac->c);
 
   if (ac->ev.data != nullptr) {

@@ -111,15 +111,15 @@ typedef struct dictIterator {
 #define dictSize(ht) ((ht)->used)
 
 /* API */
-static unsigned int dictGenHashFunction(const unsigned char *buf, int len);
-static dict *dictCreate(dictType *type, void *privDataPtr);
-static int dictExpand(dict *ht, unsigned long size);
-static int dictAdd(dict *ht, void *key, void *val);
-static int dictReplace(dict *ht, void *key, void *val);
-static int dictDelete(dict *ht, const void *key);
-static void dictRelease(dict *ht);
-static dictEntry *dictFind(dict *ht, const void *key);
-static void dictInitIterator(dictIterator *iter, dict *ht);
-static dictEntry *dictNext(dictIterator *iter);
+[[maybe_unused]] static unsigned int dictGenHashFunction(const unsigned char *buf, int len);
+[[maybe_unused]] static dict *dictCreate(dictType *type, void *privDataPtr);
+[[maybe_unused]] static int dictExpand(dict *ht, unsigned long size);
+[[maybe_unused]] static int dictAdd(dict *ht, void *key, void *val);
+[[maybe_unused]] static int dictReplace(dict *ht, void *key, void *val);
+[[maybe_unused]] static int dictDelete(dict *ht, const void *key);
+[[maybe_unused]] static void dictRelease(dict *ht);
+[[maybe_unused]] static dictEntry *dictFind(dict *ht, const void *key);
+[[maybe_unused]] static void dictInitIterator(dictIterator *iter, dict *ht);
+[[maybe_unused]] static dictEntry *dictNext(dictIterator *iter);
 
 #endif /* __DICT_H */

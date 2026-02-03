@@ -58,13 +58,13 @@ pub fn build(b: *std.Build) void {
     const os_tag = target.result.os.tag;
     const base_cflags = if (os_tag == .windows) &common_cflags else &common_cflags_pic;
 
-    var fmacros_cflags_list = std.ArrayList([]const u8).init(b.allocator);
-    fmacros_cflags_list.appendSlice(base_cflags) catch @panic("OOM");
+    var fmacros_cflags_list = std.ArrayList([]const u8).empty;
+    fmacros_cflags_list.appendSlice(b.allocator, base_cflags) catch @panic("OOM");
     if (os_tag != .aix) {
-        fmacros_cflags_list.appendSlice(&posix_feature_cflags) catch @panic("OOM");
+        fmacros_cflags_list.appendSlice(b.allocator, &posix_feature_cflags) catch @panic("OOM");
     }
     if (os_tag.isDarwin()) {
-        fmacros_cflags_list.appendSlice(&darwin_feature_cflags) catch @panic("OOM");
+        fmacros_cflags_list.appendSlice(b.allocator, &darwin_feature_cflags) catch @panic("OOM");
     }
     const fmacros_cflags = fmacros_cflags_list.items;
 
@@ -97,6 +97,12 @@ pub fn build(b: *std.Build) void {
         .install_dir = .header,
         .install_subdir = "adapters",
     });
+
+    const clean_step = b.step("clean", "Remove build artifacts");
+    const remove_cache = b.addRemoveDirTree(b.path(".zig-cache"));
+    const remove_out = b.addRemoveDirTree(b.path("zig-out"));
+    clean_step.dependOn(&remove_cache.step);
+    clean_step.dependOn(&remove_out.step);
 
     const examples_step = b.step("examples", "Build example programs");
     const link_lib = static_lib orelse shared_lib.?;

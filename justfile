@@ -17,7 +17,7 @@ examples *args:
 
 # Remove build artifacts.
 clean:
-  {{zig}} build --clean
+  {{zig}} build clean
 
 # Format C sources with clang-format.
 format:
