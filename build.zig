@@ -1,0 +1,166 @@
+const std = @import("std");
+
+const base_sources = [_][]const u8{
+    "src/alloc.c",
+    "src/async.c",
+    "src/dict.c",
+    "src/hiredis.c",
+    "src/net.c",
+    "src/read.c",
+    "src/sds.c",
+    "src/sockcompat.c",
+};
+
+const common_cflags = [_][]const u8{
+    "-std=c23",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Werror",
+    "-Wstrict-prototypes",
+    "-Wwrite-strings",
+    "-Wno-missing-field-initializers",
+};
+
+const common_cflags_pic = [_][]const u8{
+    "-std=c23",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Werror",
+    "-Wstrict-prototypes",
+    "-Wwrite-strings",
+    "-Wno-missing-field-initializers",
+    "-fPIC",
+};
+
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    const enable_ssl = b.option(bool, "ssl", "Enable OpenSSL support") orelse false;
+    const enable_examples = b.option(bool, "examples", "Build example programs") orelse false;
+    const enable_libuv = b.option(bool, "libuv", "Build the libuv example (requires libuv)") orelse false;
+    const build_shared = b.option(bool, "shared", "Build shared library") orelse true;
+    const build_static = b.option(bool, "static", "Build static library") orelse true;
+
+    const cflags = if (target.result.os.tag == .windows) &common_cflags else &common_cflags_pic;
+
+    var static_lib: ?*std.Build.Step.Compile = null;
+    var shared_lib: ?*std.Build.Step.Compile = null;
+
+    if (!build_static and !build_shared) {
+        std.debug.panic("At least one of -Dstatic or -Dshared must be enabled.", .{});
+    }
+
+    if (build_static) {
+        const lib = addHiredisLibrary(b, "hiredis", target, optimize, false, enable_ssl, cflags);
+        b.installArtifact(lib);
+        static_lib = lib;
+    }
+
+    if (build_shared) {
+        const lib = addHiredisLibrary(b, "hiredis", target, optimize, true, enable_ssl, cflags);
+        b.installArtifact(lib);
+        shared_lib = lib;
+    }
+
+    b.installDirectory(.{
+        .source_dir = b.path("src/include"),
+        .install_dir = .header,
+        .install_subdir = "",
+    });
+    b.installDirectory(.{
+        .source_dir = b.path("adapters"),
+        .install_dir = .header,
+        .install_subdir = "adapters",
+    });
+
+    if (enable_examples) {
+        const link_lib = static_lib orelse shared_lib.?;
+        addExample(b, "example", "examples/example.c", target, optimize, link_lib, cflags, false, false);
+        addExample(b, "example-push", "examples/example-push.c", target, optimize, link_lib, cflags, false, false);
+        addExample(b, "example-poll", "examples/example-poll.c", target, optimize, link_lib, cflags, false, false);
+
+        if (enable_ssl) {
+            addExample(b, "example-ssl", "examples/example-ssl.c", target, optimize, link_lib, cflags, true, false);
+        }
+
+        if (enable_libuv) {
+            addExample(b, "example-libuv", "examples/example-libuv.c", target, optimize, link_lib, cflags, false, true);
+        }
+    }
+}
+
+fn addHiredisLibrary(
+    b: *std.Build,
+    name: []const u8,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    shared: bool,
+    enable_ssl: bool,
+    cflags: []const []const u8,
+) *std.Build.Step.Compile {
+    const module = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    module.addIncludePath(b.path("."));
+    module.addIncludePath(b.path("src/include"));
+    module.addCSourceFiles(.{ .files = &base_sources, .flags = cflags });
+
+    if (enable_ssl) {
+        module.addCSourceFiles(.{ .files = &[_][]const u8{"src/ssl.c"}, .flags = cflags });
+    }
+
+    const lib = b.addLibrary(.{
+        .name = name,
+        .root_module = module,
+        .linkage = if (shared) .dynamic else .static,
+    });
+
+    if (enable_ssl and shared) {
+        lib.linkSystemLibrary("ssl");
+        lib.linkSystemLibrary("crypto");
+        lib.linkSystemLibrary("pthread");
+    }
+
+    return lib;
+}
+
+fn addExample(
+    b: *std.Build,
+    name: []const u8,
+    source: []const u8,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    lib: *std.Build.Step.Compile,
+    cflags: []const []const u8,
+    needs_ssl: bool,
+    needs_libuv: bool,
+) void {
+    const module = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    module.addIncludePath(b.path("."));
+    module.addIncludePath(b.path("src/include"));
+    module.addCSourceFiles(.{ .files = &[_][]const u8{source}, .flags = cflags });
+
+    const exe = b.addExecutable(.{ .name = name, .root_module = module });
+    exe.linkLibrary(lib);
+
+    if (needs_ssl) {
+        exe.linkSystemLibrary("ssl");
+        exe.linkSystemLibrary("crypto");
+        exe.linkSystemLibrary("pthread");
+    }
+
+    if (needs_libuv) {
+        exe.linkSystemLibrary("uv");
+    }
+
+    b.installArtifact(exe);
+}

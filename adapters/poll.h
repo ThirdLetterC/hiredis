@@ -2,8 +2,8 @@
 #ifndef HIREDIS_POLL_H
 #define HIREDIS_POLL_H
 
-#include "../async.h"
-#include "../sockcompat.h"
+#include <async.h>
+#include <sockcompat.h>
 #include <errno.h>
 #include <string.h> // for memset
 #include <sys/time.h>

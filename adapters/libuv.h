@@ -1,8 +1,8 @@
 #ifndef __HIREDIS_LIBUV_H__
 #define __HIREDIS_LIBUV_H__
-#include "../async.h"
-#include "../hiredis.h"
-#include <stdlib.h>
+
+#include <async.h>
+#include <hiredis.h>
 #include <string.h>
 #include <uv.h>
 

@@ -1,5 +1,0 @@
-FIND_PATH(LIBUV uv.h)
-IF (LIBUV)
-    ADD_EXECUTABLE(example-libuv example-libuv.c)
-    TARGET_LINK_LIBRARIES(example-libuv hiredis uv)
-ENDIF()
