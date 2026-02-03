@@ -1,0 +1,10 @@
+-std=c23
+-Wall
+-Wextra
+-Wpedantic
+-Werror
+-Wstrict-prototypes
+-Wwrite-strings
+-Wno-missing-field-initializers
+-fPIC
+-I.
