@@ -5,14 +5,13 @@
 #include <alloc.h>
 #include <async.h>
 #include <errno.h>
-#include <string.h> // for memset
 #include <sys/poll.h>
 #include <sys/time.h>
 
 /* Values to return from redisPollTick */
-#define REDIS_POLL_HANDLED_READ 1
-#define REDIS_POLL_HANDLED_WRITE 2
-#define REDIS_POLL_HANDLED_TIMEOUT 4
+[[maybe_unused]] static constexpr int REDIS_POLL_HANDLED_READ = 0b0001;
+[[maybe_unused]] static constexpr int REDIS_POLL_HANDLED_WRITE = 0b0010;
+[[maybe_unused]] static constexpr int REDIS_POLL_HANDLED_TIMEOUT = 0b0100;
 
 /* An adapter to allow manual polling of the async context by checking the state
  * of the underlying file descriptor.  Useful in cases where there is no formal
@@ -21,16 +20,17 @@
 typedef struct redisPollEvents {
   redisAsyncContext *context;
   redisFD fd;
-  char reading, writing;
-  char in_tick;
-  char deleted;
+  bool reading;
+  bool writing;
+  bool in_tick;
+  bool deleted;
   double deadline;
 } redisPollEvents;
 
-static double redisPollTimevalToDouble(struct timeval *tv) {
+static double redisPollTimevalToDouble(const struct timeval *tv) {
   if (tv == nullptr)
     return 0.0;
-  return tv->tv_sec + tv->tv_usec / 1000000.00;
+  return (double)tv->tv_sec + (double)tv->tv_usec / 1'000'000.0;
 }
 
 static double redisPollGetNow() {
@@ -43,14 +43,14 @@ static double redisPollGetNow() {
  * positive to wait for a maximum given time for IO, zero to poll, or negative
  * to wait forever */
 static int redisPollTick(redisAsyncContext *ac, double timeout) {
-  int reading, writing;
+  bool reading, writing;
   struct pollfd pfd;
   int handled;
   int ns;
   int itimeout;
 
-  redisPollEvents *e = (redisPollEvents *)ac->ev.data;
-  if (!e)
+  auto *e = (redisPollEvents *)ac->ev.data;
+  if (e == nullptr)
     return 0;
 
   /* local flags, won't get changed during callbacks */
@@ -81,7 +81,7 @@ static int redisPollTick(redisAsyncContext *ac, double timeout) {
   }
 
   handled = 0;
-  e->in_tick = 1;
+  e->in_tick = true;
   if (ns) {
     if (reading && (pfd.revents & POLLIN)) {
       redisAsyncHandleRead(ac);
@@ -114,49 +114,49 @@ static int redisPollTick(redisAsyncContext *ac, double timeout) {
   if (e->deleted)
     hi_free(e);
   else
-    e->in_tick = 0;
+    e->in_tick = false;
 
   return handled;
 }
 
 static void redisPollAddRead(void *data) {
-  redisPollEvents *e = (redisPollEvents *)data;
-  e->reading = 1;
+  auto *e = (redisPollEvents *)data;
+  e->reading = true;
 }
 
 static void redisPollDelRead(void *data) {
-  redisPollEvents *e = (redisPollEvents *)data;
-  e->reading = 0;
+  auto *e = (redisPollEvents *)data;
+  e->reading = false;
 }
 
 static void redisPollAddWrite(void *data) {
-  redisPollEvents *e = (redisPollEvents *)data;
-  e->writing = 1;
+  auto *e = (redisPollEvents *)data;
+  e->writing = true;
 }
 
 static void redisPollDelWrite(void *data) {
-  redisPollEvents *e = (redisPollEvents *)data;
-  e->writing = 0;
+  auto *e = (redisPollEvents *)data;
+  e->writing = false;
 }
 
 static void redisPollCleanup(void *data) {
-  redisPollEvents *e = (redisPollEvents *)data;
+  auto *e = (redisPollEvents *)data;
 
   /* if we are currently processing a tick, postpone deletion */
   if (e->in_tick)
-    e->deleted = 1;
+    e->deleted = true;
   else
     hi_free(e);
 }
 
 static void redisPollScheduleTimer(void *data, struct timeval tv) {
-  redisPollEvents *e = (redisPollEvents *)data;
+  auto *e = (redisPollEvents *)data;
   double now = redisPollGetNow();
   e->deadline = now + redisPollTimevalToDouble(&tv);
 }
 
 static int redisPollAttach(redisAsyncContext *ac) {
-  redisContext *c = &(ac->c);
+  auto *c = &(ac->c);
   redisPollEvents *e;
 
   /* Nothing should be attached when something is already attached */
@@ -164,15 +164,14 @@ static int redisPollAttach(redisAsyncContext *ac) {
     return REDIS_ERR;
 
   /* Create container for context and r/w events */
-  e = (redisPollEvents *)hi_malloc(sizeof(*e));
+  e = (redisPollEvents *)hi_calloc(1, sizeof(*e));
   if (e == nullptr)
     return REDIS_ERR;
-  memset(e, 0, sizeof(*e));
 
   e->context = ac;
   e->fd = c->fd;
-  e->reading = e->writing = 0;
-  e->in_tick = e->deleted = 0;
+  e->reading = e->writing = false;
+  e->in_tick = e->deleted = false;
   e->deadline = 0.0;
 
   /* Register functions to start/stop listening for events */
