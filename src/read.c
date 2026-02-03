@@ -104,7 +104,10 @@ static size_t chrtos(char *buf, size_t size, char byte) {
 }
 
 static void __redisReaderSetErrorProtocolByte(redisReader *r, char byte) {
-  char cbuf[8], sbuf[128];
+  constexpr size_t cbuf_size = 8;
+  constexpr size_t sbuf_size = 128;
+  char cbuf[cbuf_size];
+  char sbuf[sbuf_size];
 
   chrtos(cbuf, sizeof(cbuf), byte);
   snprintf(sbuf, sizeof(sbuf), "Protocol error, got %s as reply type byte", cbuf);
@@ -296,7 +299,9 @@ static int processLineItem(redisReader *r) {
         obj = (void *)REDIS_REPLY_INTEGER;
       }
     } else if (cur->type == REDIS_REPLY_DOUBLE) {
-      char buf[326], *eptr;
+      constexpr size_t buf_size = 326;
+      char buf[buf_size];
+      char *eptr;
       double d;
 
       if ((size_t)len >= sizeof(buf)) {
@@ -778,7 +783,8 @@ int redisReaderGetReply(redisReader *r, void **reply) {
 
   /* Discard part of the buffer when we've consumed at least 1k, to avoid
    * doing unnecessary calls to memmove() in sds.c. */
-  if (r->pos >= 1024) {
+  constexpr size_t discard_threshold = 1'024;
+  if (r->pos >= discard_threshold) {
     if (sdsrange(r->buf, r->pos, -1) < 0)
       return REDIS_ERR;
     r->pos = 0;

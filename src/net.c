@@ -102,7 +102,8 @@ ssize_t redisNetWrite(redisContext *c) {
 
 static void __redisSetErrorFromErrno(redisContext *c, int type, const char *prefix) {
   int errorno = errno; /* snprintf() may change errno */
-  char buf[128] = {0};
+  constexpr size_t error_buf_size = 128;
+  char buf[error_buf_size] = {0};
   size_t len = 0;
 
   if (prefix != nullptr)
@@ -428,13 +429,15 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
                                    const struct timeval *timeout, const char *source_addr) {
   redisFD s;
   int rv, n;
-  char _port[6]; /* strlen("65535"); */
+  constexpr size_t port_buf_size = 6; /* strlen("65535"); */
+  char port_buf[port_buf_size];
   struct addrinfo hints = {0};
   struct addrinfo *servinfo, *bservinfo, *p, *b;
   auto blocking = (c->flags & REDIS_BLOCK);
   auto reuseaddr = (c->flags & REDIS_REUSEADDR);
   int reuses = 0;
   long timeout_msec = -1;
+  constexpr size_t error_buf_size = 128;
 
   servinfo = nullptr;
   c->connection_type = REDIS_CONN_TCP;
@@ -475,7 +478,7 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
     c->tcp.source_addr = hi_strdup(source_addr);
   }
 
-  snprintf(_port, 6, "%d", port);
+  snprintf(port_buf, sizeof(port_buf), "%d", port);
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
 
@@ -489,11 +492,11 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
   else
     hints.ai_family = AF_INET;
 
-  rv = getaddrinfo(c->tcp.host, _port, &hints, &servinfo);
+  rv = getaddrinfo(c->tcp.host, port_buf, &hints, &servinfo);
   if (rv != 0 && hints.ai_family != AF_UNSPEC) {
     /* Try again with the other IP version. */
     hints.ai_family = (hints.ai_family == AF_INET) ? AF_INET6 : AF_INET;
-    rv = getaddrinfo(c->tcp.host, _port, &hints, &servinfo);
+    rv = getaddrinfo(c->tcp.host, port_buf, &hints, &servinfo);
   }
   if (rv != 0) {
     __redisSetError(c, REDIS_ERR_OTHER, gai_strerror(rv));
@@ -521,7 +524,7 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
       int bound = 0;
       /* Using getaddrinfo saves us from self-determining IPv4 vs IPv6 */
       if ((rv = getaddrinfo(c->tcp.source_addr, nullptr, &hints, &bservinfo)) != 0) {
-        char buf[128];
+        char buf[error_buf_size];
         snprintf(buf, sizeof(buf), "Can't get addr: %s", gai_strerror(rv));
         __redisSetError(c, REDIS_ERR_OTHER, buf);
         goto error;
@@ -543,7 +546,7 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
       }
       freeaddrinfo(bservinfo);
       if (!bound) {
-        char buf[128];
+        char buf[error_buf_size];
         snprintf(buf, sizeof(buf), "Can't bind socket: %s", strerror(errno));
         __redisSetError(c, REDIS_ERR_OTHER, buf);
         goto error;
@@ -594,7 +597,7 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
     goto end;
   }
   if (p == nullptr) {
-    char buf[128];
+    char buf[error_buf_size];
     snprintf(buf, sizeof(buf), "Can't create socket: %s", strerror(errno));
     __redisSetError(c, REDIS_ERR_OTHER, buf);
     goto error;

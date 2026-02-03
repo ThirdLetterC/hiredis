@@ -108,7 +108,10 @@ static void redisLibuvTimeout(uv_timer_t *timer) {
 static void redisLibuvSetTimeout(void *privdata, struct timeval tv) {
   auto p = (redisLibuvEvents *)privdata;
 
-  auto millsec = (uint64_t)tv.tv_sec * 1'000 + (uint64_t)(tv.tv_usec / 1'000);
+  constexpr uint64_t milliseconds_per_second = 1'000;
+  constexpr uint64_t microseconds_per_millisecond = 1'000;
+  auto millsec = (uint64_t)tv.tv_sec * milliseconds_per_second +
+                 (uint64_t)(tv.tv_usec / microseconds_per_millisecond);
   if (!p->timer.data) {
     // timer is uninitialized
     if (uv_timer_init(p->handle.loop, &p->timer) != 0) {

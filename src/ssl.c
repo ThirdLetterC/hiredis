@@ -328,7 +328,8 @@ static int redisSSLConnect(redisContext *c, SSL *ssl) {
   }
 
   if (c->err == 0) {
-    char err[512];
+    constexpr size_t err_size = 512;
+    char err[err_size];
     if (rv == SSL_ERROR_SYSCALL)
       snprintf(err, sizeof(err) - 1, "SSL_connect failed: %s", strerror(errno));
     else {

@@ -290,11 +290,11 @@ static uint32_t countDigits(uint64_t v) {
       return result;
     if (v < 100)
       return result + 1;
-    if (v < 1000)
+    if (v < 1'000)
       return result + 2;
-    if (v < 10000)
+    if (v < 10'000)
       return result + 3;
-    v /= 10000U;
+    v /= 10'000U;
     result += 4;
   }
 }
@@ -991,7 +991,8 @@ redisPushFn *redisSetPushCallback(redisContext *c, redisPushFn *fn) {
  * After this function is called, you may use redisGetReplyFromReader to
  * see if there is a reply available. */
 int redisBufferRead(redisContext *c) {
-  char buf[1024 * 16];
+  constexpr size_t buf_size = 16 * 1'024;
+  char buf[buf_size];
   int nread;
 
   /* Return early when the context has seen an error. */
