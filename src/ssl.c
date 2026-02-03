@@ -36,6 +36,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <pthread.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "alloc.h"
@@ -96,6 +97,9 @@ typedef pthread_mutex_t sslLockType;
 static void sslLockInit(sslLockType *l) {
   pthread_mutex_init(l, nullptr);
 }
+static void sslLockDestroy(sslLockType *l) {
+  pthread_mutex_destroy(l);
+}
 static void sslLockAcquire(sslLockType *l) {
   pthread_mutex_lock(l);
 }
@@ -104,6 +108,25 @@ static void sslLockRelease(sslLockType *l) {
 }
 
 static sslLockType *ossl_locks;
+static unsigned ossl_lock_count;
+static bool ossl_lock_cleanup_registered;
+
+static void freeOpensslLocks() {
+  if (ossl_locks == nullptr)
+    return;
+
+  if (CRYPTO_get_locking_callback() == opensslDoLock) {
+    CRYPTO_set_locking_callback(nullptr);
+  }
+
+  for (unsigned ii = 0; ii < ossl_lock_count; ii++) {
+    sslLockDestroy(ossl_locks + ii);
+  }
+
+  hi_free(ossl_locks);
+  ossl_locks = nullptr;
+  ossl_lock_count = 0;
+}
 
 static void opensslDoLock(int mode, int lkid, [[maybe_unused]] const char *f,
                           [[maybe_unused]] int line) {
@@ -122,6 +145,9 @@ static int initOpensslLocks() {
     /* Someone already set the callback before us. Don't destroy it! */
     return REDIS_OK;
   }
+  if (ossl_locks != nullptr) {
+    return REDIS_OK;
+  }
   nlocks = CRYPTO_num_locks();
   ossl_locks = hi_malloc(sizeof(*ossl_locks) * nlocks);
   if (ossl_locks == nullptr)
@@ -130,7 +156,13 @@ static int initOpensslLocks() {
   for (ii = 0; ii < nlocks; ii++) {
     sslLockInit(ossl_locks + ii);
   }
+  ossl_lock_count = nlocks;
   CRYPTO_set_locking_callback(opensslDoLock);
+  if (!ossl_lock_cleanup_registered) {
+    if (atexit(freeOpensslLocks) == 0) {
+      ossl_lock_cleanup_registered = true;
+    }
+  }
   return REDIS_OK;
 }
 #endif /* HIREDIS_USE_CRYPTO_LOCKS */
