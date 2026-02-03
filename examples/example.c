@@ -4,18 +4,20 @@
 #include <string.h>
 
 static void example_argv_command(redisContext *c, size_t n) {
-  char **argv, tmp[42];
-  size_t *argvlen;
-  redisReply *reply;
+  constexpr size_t argv_fixed = 2;
+  constexpr size_t tmp_size = 42;
+  const size_t argv_count = argv_fixed + n;
+  char tmp[tmp_size];
+  char **argv = calloc(argv_count, sizeof(*argv));
+  size_t *argvlen = calloc(argv_count, sizeof(*argvlen));
+  redisReply *reply = nullptr;
 
   /* We're allocating two additional elements for command and key */
-  argv = calloc(2 + n, sizeof(*argv));
-  argvlen = calloc(2 + n, sizeof(*argvlen));
   if (argv == nullptr || argvlen == nullptr) {
     fprintf(stderr, "Error: out of memory\n");
     free(argv);
     free(argvlen);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /* First the command */
@@ -27,28 +29,28 @@ static void example_argv_command(redisContext *c, size_t n) {
   argvlen[1] = sizeof("argvlist") - 1;
 
   /* Now add the entries we wish to add to the list */
-  for (size_t i = 2; i < (n + 2); i++) {
-    argvlen[i] = snprintf(tmp, sizeof(tmp), "argv-element-%zu", i - 2);
+  for (size_t i = argv_fixed; i < argv_count; i++) {
+    argvlen[i] = snprintf(tmp, sizeof(tmp), "argv-element-%zu", i - argv_fixed);
     argv[i] = strdup(tmp);
     if (argv[i] == nullptr) {
       fprintf(stderr, "Error: out of memory\n");
-      for (size_t k = 2; k < i; k++) {
+      for (size_t k = argv_fixed; k < i; k++) {
         free(argv[k]);
       }
       free(argv);
       free(argvlen);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
   /* Execute the command using redisCommandArgv.  We're sending the arguments
    * with two explicit arrays.  One for each argument's string, and the other
    * for its length. */
-  reply = redisCommandArgv(c, n + 2, (const char **)argv, (const size_t *)argvlen);
+  reply = redisCommandArgv(c, argv_count, (const char **)argv, (const size_t *)argvlen);
 
   if (reply == nullptr || c->err) {
     fprintf(stderr, "Error:  Couldn't execute redisCommandArgv\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (reply->type == REDIS_REPLY_INTEGER) {
@@ -58,7 +60,7 @@ static void example_argv_command(redisContext *c, size_t n) {
   freeReplyObject(reply);
 
   /* Clean up */
-  for (size_t i = 2; i < (n + 2); i++) {
+  for (size_t i = argv_fixed; i < argv_count; i++) {
     free(argv[i]);
   }
 
@@ -67,10 +69,9 @@ static void example_argv_command(redisContext *c, size_t n) {
 }
 
 int main(int argc, char **argv) {
-  unsigned int j;
   bool isunix = false;
-  redisContext *c;
-  redisReply *reply;
+  redisContext *c = nullptr;
+  redisReply *reply = nullptr;
   const char *hostname = (argc > 1) ? argv[1] : "127.0.0.1";
 
   if (argc > 2) {
@@ -81,9 +82,10 @@ int main(int argc, char **argv) {
     }
   }
 
-  int port = (argc > 2) ? atoi(argv[2]) : 6379;
+  constexpr int default_port = 6'379;
+  auto port = (argc > 2) ? atoi(argv[2]) : default_port;
 
-  struct timeval timeout = {.tv_sec = 1, .tv_usec = 500'000}; // 1.5 seconds
+  constexpr struct timeval timeout = {.tv_sec = 1, .tv_usec = 500'000}; // 1.5 seconds
   if (isunix) {
     c = redisConnectUnixWithTimeout(hostname, timeout);
   } else {
@@ -96,7 +98,7 @@ int main(int argc, char **argv) {
     } else {
       printf("Connection error: can't allocate redis context\n");
     }
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /* PING server */
@@ -130,10 +132,12 @@ int main(int argc, char **argv) {
   /* Create a list of numbers, from 0 to 9 */
   reply = redisCommand(c, "DEL mylist");
   freeReplyObject(reply);
-  for (j = 0; j < 10; j++) {
-    char buf[64];
+  constexpr size_t list_len = 10;
+  constexpr size_t buf_size = 64;
+  for (size_t j = 0; j < list_len; j++) {
+    char buf[buf_size];
 
-    snprintf(buf, 64, "%u", j);
+    snprintf(buf, sizeof(buf), "%zu", j);
     reply = redisCommand(c, "LPUSH mylist element-%s", buf);
     freeReplyObject(reply);
   }
@@ -141,14 +145,15 @@ int main(int argc, char **argv) {
   /* Let's check what we have inside the list */
   reply = redisCommand(c, "LRANGE mylist 0 -1");
   if (reply->type == REDIS_REPLY_ARRAY) {
-    for (j = 0; j < reply->elements; j++) {
-      printf("%u) %s\n", j, reply->element[j]->str);
+    for (size_t j = 0; j < reply->elements; j++) {
+      printf("%zu) %s\n", j, reply->element[j]->str);
     }
   }
   freeReplyObject(reply);
 
   /* See function for an example of redisCommandArgv */
-  example_argv_command(c, 10);
+  constexpr size_t argv_entries = 10;
+  example_argv_command(c, argv_entries);
 
   /* Disconnects and frees the context */
   redisFree(c);

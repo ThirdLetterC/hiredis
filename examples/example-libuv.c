@@ -49,19 +49,21 @@ void disconnectCallback(const redisAsyncContext *c, int status) {
 int main(int argc, char **argv) {
   signal(SIGPIPE, SIG_IGN);
 
-  uv_loop_t *loop = uv_default_loop();
+  auto loop = uv_default_loop();
 
-  redisAsyncContext *c = redisAsyncConnect("127.0.0.1", 6379);
-  if (c->err) {
+  constexpr int default_port = 6'379;
+  auto c = redisAsyncConnect("127.0.0.1", default_port);
+  if (c == nullptr || c->err) {
     /* Let *c leak for now... */
-    printf("Error: %s\n", c->errstr);
+    printf("Error: %s\n", c ? c->errstr : "can't allocate redis context");
     return 1;
   }
 
   redisLibuvAttach(c, loop);
   redisAsyncSetConnectCallback(c, connectCallback);
   redisAsyncSetDisconnectCallback(c, disconnectCallback);
-  redisAsyncSetTimeout(c, (struct timeval){.tv_sec = 1, .tv_usec = 0});
+  constexpr struct timeval timeout = {.tv_sec = 1, .tv_usec = 0};
+  redisAsyncSetTimeout(c, timeout);
 
   /*
   In this demo, we first `set key`, then `get key` to demonstrate the basic
@@ -71,7 +73,9 @@ int main(int argc, char **argv) {
   which is shown in the `debugCallback`.
   */
 
-  redisAsyncCommand(c, nullptr, nullptr, "SET key %b", argv[argc - 1], strlen(argv[argc - 1]));
+  const char *value = argv[argc - 1];
+  auto value_len = strlen(value);
+  redisAsyncCommand(c, nullptr, nullptr, "SET key %b", value, value_len);
   redisAsyncCommand(c, getCallback, (char *)"end-1", "GET key");
 
   uv_run(loop, UV_RUN_DEFAULT);

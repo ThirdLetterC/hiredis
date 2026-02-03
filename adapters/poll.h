@@ -30,7 +30,8 @@ typedef struct redisPollEvents {
 static double redisPollTimevalToDouble(const struct timeval *tv) {
   if (tv == nullptr)
     return 0.0;
-  return (double)tv->tv_sec + (double)tv->tv_usec / 1'000'000.0;
+  constexpr double microseconds_per_second = 1'000'000.0;
+  return (double)tv->tv_sec + (double)tv->tv_usec / microseconds_per_second;
 }
 
 static double redisPollGetNow() {
@@ -43,36 +44,25 @@ static double redisPollGetNow() {
  * positive to wait for a maximum given time for IO, zero to poll, or negative
  * to wait forever */
 static int redisPollTick(redisAsyncContext *ac, double timeout) {
-  bool reading, writing;
-  struct pollfd pfd;
-  int handled;
-  int ns;
-  int itimeout;
-
   auto e = (redisPollEvents *)ac->ev.data;
   if (e == nullptr)
     return 0;
 
   /* local flags, won't get changed during callbacks */
-  reading = e->reading;
-  writing = e->writing;
+  const bool reading = e->reading;
+  const bool writing = e->writing;
   if (!reading && !writing)
     return 0;
 
-  pfd.fd = e->fd;
-  pfd.events = 0;
+  struct pollfd pfd = {.fd = e->fd, .events = 0};
   if (reading)
     pfd.events = POLLIN;
   if (writing)
     pfd.events |= POLLOUT;
 
-  if (timeout >= 0.0) {
-    itimeout = (int)(timeout * 1000.0);
-  } else {
-    itimeout = -1;
-  }
+  const int itimeout = (timeout >= 0.0) ? (int)(timeout * 1000.0) : -1;
 
-  ns = poll(&pfd, 1, itimeout);
+  auto ns = poll(&pfd, 1, itimeout);
   if (ns < 0) {
     /* ignore the EINTR error */
     if (errno != EINTR)
@@ -80,7 +70,7 @@ static int redisPollTick(redisAsyncContext *ac, double timeout) {
     ns = 0;
   }
 
-  handled = 0;
+  auto handled = 0;
   e->in_tick = true;
   if (ns) {
     if (reading && (pfd.revents & POLLIN)) {
@@ -101,7 +91,7 @@ static int redisPollTick(redisAsyncContext *ac, double timeout) {
 
   /* perform timeouts */
   if (!e->deleted && e->deadline != 0.0) {
-    double now = redisPollGetNow();
+    const double now = redisPollGetNow();
     if (now >= e->deadline) {
       /* deadline has passed.  disable timeout and perform callback */
       e->deadline = 0.0;
@@ -151,20 +141,19 @@ static void redisPollCleanup(void *data) {
 
 static void redisPollScheduleTimer(void *data, struct timeval tv) {
   auto e = (redisPollEvents *)data;
-  double now = redisPollGetNow();
+  const double now = redisPollGetNow();
   e->deadline = now + redisPollTimevalToDouble(&tv);
 }
 
 static int redisPollAttach(redisAsyncContext *ac) {
-  auto c = &(ac->c);
-  redisPollEvents *e;
+  auto c = &ac->c;
 
   /* Nothing should be attached when something is already attached */
   if (ac->ev.data != nullptr)
     return REDIS_ERR;
 
   /* Create container for context and r/w events */
-  e = (redisPollEvents *)hi_calloc(1, sizeof(*e));
+  auto e = (redisPollEvents *)hi_calloc(1, sizeof(redisPollEvents));
   if (e == nullptr)
     return REDIS_ERR;
 

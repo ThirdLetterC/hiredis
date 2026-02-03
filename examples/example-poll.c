@@ -42,20 +42,24 @@ void disconnectCallback(const redisAsyncContext *c, int status) {
 int main(int argc, char **argv) {
   signal(SIGPIPE, SIG_IGN);
 
-  redisAsyncContext *c = redisAsyncConnect("127.0.0.1", 6379);
-  if (c->err) {
+  constexpr int default_port = 6'379;
+  auto c = redisAsyncConnect("127.0.0.1", default_port);
+  if (c == nullptr || c->err) {
     /* Let *c leak for now... */
-    printf("Error: %s\n", c->errstr);
+    printf("Error: %s\n", c ? c->errstr : "can't allocate redis context");
     return 1;
   }
 
   redisPollAttach(c);
   redisAsyncSetConnectCallback(c, connectCallback);
   redisAsyncSetDisconnectCallback(c, disconnectCallback);
-  redisAsyncCommand(c, nullptr, nullptr, "SET key %b", argv[argc - 1], strlen(argv[argc - 1]));
+  const char *value = argv[argc - 1];
+  auto value_len = strlen(value);
+  redisAsyncCommand(c, nullptr, nullptr, "SET key %b", value, value_len);
   redisAsyncCommand(c, getCallback, (char *)"end-1", "GET key");
+  constexpr double tick_seconds = 0.1;
   while (!exit_loop) {
-    redisPollTick(c, 0.1);
+    redisPollTick(c, tick_seconds);
   }
   return 0;
 }

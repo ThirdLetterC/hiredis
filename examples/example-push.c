@@ -29,16 +29,24 @@
  */
 
 #include <hiredis.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 static constexpr unsigned int KEY_COUNT = 5;
 
-#define panicAbort(fmt, ...)                                                                       \
-  do {                                                                                             \
-    fprintf(stderr, "%s:%d:%s(): " fmt, __FILE__, __LINE__, __func__, __VA_ARGS__);                \
-    exit(-1);                                                                                      \
-  } while (0)
+[[noreturn]] static void panicAbortImpl(const char *file, int line, const char *func,
+                                        const char *fmt, ...) {
+  va_list args;
+  fprintf(stderr, "%s:%d:%s(): ", file, line, func);
+  va_start(args, fmt);
+  vfprintf(stderr, fmt, args);
+  va_end(args);
+  fputc('\n', stderr);
+  exit(EXIT_FAILURE);
+}
+
+#define panicAbort(fmt, ...) panicAbortImpl(__FILE__, __LINE__, __func__, fmt, __VA_ARGS__)
 
 static void assertReplyAndFree(redisContext *context, redisReply *reply, int type) {
   if (reply == nullptr)
@@ -56,7 +64,7 @@ static void assertReplyAndFree(redisContext *context, redisReply *reply, int typ
 
 /* Switch to the RESP3 protocol and enable client tracking */
 static void enableClientTracking(redisContext *c) {
-  redisReply *reply = redisCommand(c, "HELLO 3");
+  auto reply = (redisReply *)redisCommand(c, "HELLO 3");
   if (reply == nullptr || c->err) {
     panicAbort("NULL reply or server error (error: %s)", c->errstr);
   }
@@ -65,13 +73,13 @@ static void enableClientTracking(redisContext *c) {
     fprintf(stderr, "Error: Can't send HELLO 3 command.  Are you sure you're ");
     fprintf(stderr, "connected to redis-server >= 6.0.0?\nRedis error: %s\n",
             reply->type == REDIS_REPLY_ERROR ? reply->str : "(unknown)");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   freeReplyObject(reply);
 
   /* Enable client tracking */
-  reply = redisCommand(c, "CLIENT TRACKING ON");
+  reply = (redisReply *)redisCommand(c, "CLIENT TRACKING ON");
   assertReplyAndFree(c, reply, REDIS_REPLY_STATUS);
 }
 
@@ -103,12 +111,12 @@ void privdata_dtor(void *privdata) {
 }
 
 int main(int argc, char **argv) {
-  unsigned int j, invalidations = 0;
-  redisContext *c;
-  redisReply *reply;
+  auto invalidations = 0u;
+  redisContext *c = nullptr;
 
   const char *hostname = (argc > 1) ? argv[1] : "127.0.0.1";
-  int port = (argc > 2) ? atoi(argv[2]) : 6379;
+  constexpr int default_port = 6'379;
+  auto port = (argc > 2) ? atoi(argv[2]) : default_port;
 
   redisOptions o = {0};
   REDIS_OPTIONS_SET_TCP(&o, hostname, port);
@@ -136,18 +144,18 @@ int main(int argc, char **argv) {
 
   /* Set some keys and then read them back.  Once we do that, Redis will deliver
    * invalidation push messages whenever the key is modified */
-  for (j = 0; j < KEY_COUNT; j++) {
-    reply = redisCommand(c, "SET key:%d initial:%d", j, j);
+  for (auto j = 0u; j < KEY_COUNT; j++) {
+    auto reply = (redisReply *)redisCommand(c, "SET key:%d initial:%d", j, j);
     assertReplyAndFree(c, reply, REDIS_REPLY_STATUS);
 
-    reply = redisCommand(c, "GET key:%d", j);
+    reply = (redisReply *)redisCommand(c, "GET key:%d", j);
     assertReplyAndFree(c, reply, REDIS_REPLY_STRING);
   }
 
   /* Trigger invalidation messages by updating keys we just read */
-  for (j = 0; j < KEY_COUNT; j++) {
+  for (auto j = 0u; j < KEY_COUNT; j++) {
     printf("            main(): SET key:%d update:%d\n", j, j);
-    reply = redisCommand(c, "SET key:%d update:%d", j, j);
+    auto reply = (redisReply *)redisCommand(c, "SET key:%d update:%d", j, j);
     assertReplyAndFree(c, reply, REDIS_REPLY_STATUS);
     printf("            main(): SET REPLY OK\n");
   }
