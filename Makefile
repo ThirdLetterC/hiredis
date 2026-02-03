@@ -4,7 +4,7 @@
 # This file is released under the BSD license, see the COPYING file
 
 OBJ=alloc.o net.o hiredis.o sds.o async.o read.o
-EXAMPLES=hiredis-example hiredis-example-libevent hiredis-example-libev hiredis-example-glib hiredis-example-push hiredis-example-poll
+EXAMPLES=hiredis-example-libuv
 TESTS=hiredis-test
 LIBNAME=libhiredis
 PKGCONFNAME=hiredis.pc
@@ -73,7 +73,6 @@ USE_SSL?=0
 ifeq ($(USE_SSL),1)
   # This is required for test.c only
   CFLAGS+=-DHIREDIS_TEST_SSL
-  EXAMPLES+=hiredis-example-ssl hiredis-example-libevent-ssl
   SSL_STLIB=$(SSL_STLIBNAME)
   SSL_DYLIB=$(SSL_DYLIBNAME)
   SSL_PKGCONF=$(SSL_PKGCONFNAME)
@@ -89,11 +88,6 @@ endif
 
 # Platform-specific overrides
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
-
-# This is required for test.c only
-ifeq ($(TEST_ASYNC),1)
-  export CFLAGS+=-DHIREDIS_TEST_ASYNC
-endif
 
 ifeq ($(USE_SSL),1)
   ifndef OPENSSL_PREFIX
@@ -184,42 +178,6 @@ $(SSL_OBJ): ssl.c hiredis.h read.h sds.h alloc.h async.h async_private.h
 #################### SSL building rules end ####################
 
 # Binaries:
-hiredis-example-libevent: examples/example-libevent.c adapters/libevent.h $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< -levent $(STLIBNAME) $(REAL_LDFLAGS)
-
-hiredis-example-libevent-ssl: examples/example-libevent-ssl.c adapters/libevent.h $(STLIBNAME) $(SSL_STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< -levent $(STLIBNAME) $(SSL_STLIBNAME) $(REAL_LDFLAGS) $(SSL_LDFLAGS)
-
-hiredis-example-libev: examples/example-libev.c adapters/libev.h $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< -lev $(STLIBNAME) $(REAL_LDFLAGS)
-
-hiredis-example-libhv: examples/example-libhv.c adapters/libhv.h $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< -lhv $(STLIBNAME) $(REAL_LDFLAGS)
-
-hiredis-example-glib: examples/example-glib.c adapters/glib.h $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< $(shell pkg-config --cflags --libs glib-2.0) $(STLIBNAME) $(REAL_LDFLAGS)
-
-hiredis-example-ivykis: examples/example-ivykis.c adapters/ivykis.h $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< -livykis $(STLIBNAME) $(REAL_LDFLAGS)
-
-hiredis-example-macosx: examples/example-macosx.c adapters/macosx.h $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< -framework CoreFoundation $(STLIBNAME) $(REAL_LDFLAGS)
-
-hiredis-example-ssl: examples/example-ssl.c $(STLIBNAME) $(SSL_STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< $(STLIBNAME) $(SSL_STLIBNAME) $(REAL_LDFLAGS) $(SSL_LDFLAGS)
-
-hiredis-example-poll: examples/example-poll.c adapters/poll.h $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< $(STLIBNAME) $(REAL_LDFLAGS)
-
-ifndef AE_DIR
-hiredis-example-ae:
-	@echo "Please specify AE_DIR (e.g. <redis repository>/src)"
-	@false
-else
-hiredis-example-ae: examples/example-ae.c adapters/ae.h $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) $(REAL_LDFLAGS) -I. -I$(AE_DIR) $< $(AE_DIR)/ae.o $(AE_DIR)/zmalloc.o $(AE_DIR)/../deps/jemalloc/lib/libjemalloc.a -pthread $(STLIBNAME)
-endif
-
 ifndef LIBUV_DIR
 # dynamic link libuv.so
 hiredis-example-libuv: examples/example-libuv.c adapters/libuv.h $(STLIBNAME)
@@ -230,34 +188,12 @@ hiredis-example-libuv: examples/example-libuv.c adapters/libuv.h $(STLIBNAME)
 	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. -I$(LIBUV_DIR)/include $< $(LIBUV_DIR)/.libs/libuv.a -lpthread -lrt $(STLIBNAME) $(REAL_LDFLAGS)
 endif
 
-ifeq ($(and $(QT_MOC),$(QT_INCLUDE_DIR),$(QT_LIBRARY_DIR)),)
-hiredis-example-qt:
-	@echo "Please specify QT_MOC, QT_INCLUDE_DIR AND QT_LIBRARY_DIR"
-	@false
-else
-hiredis-example-qt: examples/example-qt.cpp adapters/qt.h $(STLIBNAME)
-	$(QT_MOC) adapters/qt.h -I. -I$(QT_INCLUDE_DIR) -I$(QT_INCLUDE_DIR)/QtCore | \
-	    $(CXX) -x c++ -o qt-adapter-moc.o -c - $(REAL_CFLAGS) -I. -I$(QT_INCLUDE_DIR) -I$(QT_INCLUDE_DIR)/QtCore
-	$(QT_MOC) examples/example-qt.h -I. -I$(QT_INCLUDE_DIR) -I$(QT_INCLUDE_DIR)/QtCore | \
-	    $(CXX) -x c++ -o qt-example-moc.o -c - $(REAL_CFLAGS) -I. -I$(QT_INCLUDE_DIR) -I$(QT_INCLUDE_DIR)/QtCore
-	$(CXX) -o examples/$@ $(REAL_CFLAGS) $(REAL_LDFLAGS) -I. -I$(QT_INCLUDE_DIR) -I$(QT_INCLUDE_DIR)/QtCore -L$(QT_LIBRARY_DIR) qt-adapter-moc.o qt-example-moc.o $< -pthread $(STLIBNAME) -lQtCore
-endif
-
-hiredis-example: examples/example.c $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< $(STLIBNAME) $(REAL_LDFLAGS)
-
-hiredis-example-push: examples/example-push.c $(STLIBNAME)
-	$(CC) -o examples/$@ $(REAL_CFLAGS) -I. $< $(STLIBNAME) $(REAL_LDFLAGS)
-
 examples: $(EXAMPLES)
 
 TEST_LIBS = $(STLIBNAME) $(SSL_STLIB)
 TEST_LDFLAGS = $(SSL_LDFLAGS)
 ifeq ($(USE_SSL),1)
   TEST_LDFLAGS += -pthread
-endif
-ifeq ($(TEST_ASYNC),1)
-    TEST_LDFLAGS += -levent
 endif
 
 hiredis-test: test.o $(TEST_LIBS)

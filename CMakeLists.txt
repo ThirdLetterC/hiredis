@@ -34,7 +34,6 @@ OPTION(ENABLE_SSL "Build hiredis_ssl for SSL support" OFF)
 OPTION(DISABLE_TESTS "If tests should be compiled or not" OFF)
 OPTION(ENABLE_SSL_TESTS "Should we test SSL connections" OFF)
 OPTION(ENABLE_EXAMPLES "Enable building hiredis examples" OFF)
-OPTION(ENABLE_ASYNC_TESTS "Should we run all asynchronous API tests" OFF)
 
 # Hiredis requires C99
 SET(CMAKE_C_STANDARD 99)
@@ -198,10 +197,6 @@ IF(NOT DISABLE_TESTS)
     IF(ENABLE_SSL_TESTS)
         ADD_DEFINITIONS(-DHIREDIS_TEST_SSL=1)
         TARGET_LINK_LIBRARIES(hiredis-test hiredis_ssl)
-    ENDIF()
-    IF(ENABLE_ASYNC_TESTS)
-        ADD_DEFINITIONS(-DHIREDIS_TEST_ASYNC=1)
-        TARGET_LINK_LIBRARIES(hiredis-test event)
     ENDIF()
     ADD_TEST(NAME hiredis-test
         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test.sh)
