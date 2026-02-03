@@ -7,7 +7,7 @@
 #include <async.h>
 
 /* Put in the global scope, so that loop can be explicitly stopped */
-static int exit_loop = 0;
+static bool exit_loop = false;
 
 void getCallback(redisAsyncContext *c, void *r, void *privdata) {
   redisReply *reply = r;
@@ -22,7 +22,7 @@ void getCallback(redisAsyncContext *c, void *r, void *privdata) {
 void connectCallback(const redisAsyncContext *c, int status) {
   if (status != REDIS_OK) {
     printf("Error: %s\n", c->errstr);
-    exit_loop = 1;
+    exit_loop = true;
     return;
   }
 
@@ -30,7 +30,7 @@ void connectCallback(const redisAsyncContext *c, int status) {
 }
 
 void disconnectCallback(const redisAsyncContext *c, int status) {
-  exit_loop = 1;
+  exit_loop = true;
   if (status != REDIS_OK) {
     printf("Error: %s\n", c->errstr);
     return;

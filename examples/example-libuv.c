@@ -6,8 +6,7 @@
 #include <async.h>
 #include <hiredis.h>
 
-void debugCallback(redisAsyncContext *c, void *r, void *privdata) {
-  (void)privdata; // unused
+void debugCallback(redisAsyncContext *c, void *r, [[maybe_unused]] void *privdata) {
   redisReply *reply = r;
   if (reply == nullptr) {
     /* The DEBUG SLEEP command will almost always fail, because we have set a 1

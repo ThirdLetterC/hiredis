@@ -230,14 +230,13 @@ int redisSetTcpNoDelay(redisContext *c) {
   return REDIS_OK;
 }
 
-int redisContextSetTcpUserTimeout(redisContext *c, unsigned int timeout) {
+int redisContextSetTcpUserTimeout(redisContext *c, [[maybe_unused]] unsigned int timeout) {
   int res;
 #ifdef TCP_USER_TIMEOUT
   res = setsockopt(c->fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &timeout, sizeof(timeout));
 #else
   res = -1;
   errno = ENOTSUP;
-  (void)timeout;
 #endif
   if (res == -1) {
     __redisSetErrorFromErrno(c, REDIS_ERR_IO, "setsockopt(TCP_USER_TIMEOUT)");
@@ -430,9 +429,10 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
   redisFD s;
   int rv, n;
   char _port[6]; /* strlen("65535"); */
-  struct addrinfo hints, *servinfo, *bservinfo, *p, *b;
-  int blocking = (c->flags & REDIS_BLOCK);
-  int reuseaddr = (c->flags & REDIS_REUSEADDR);
+  struct addrinfo hints = {0};
+  struct addrinfo *servinfo, *bservinfo, *p, *b;
+  auto blocking = (c->flags & REDIS_BLOCK);
+  auto reuseaddr = (c->flags & REDIS_REUSEADDR);
   int reuses = 0;
   long timeout_msec = -1;
 
@@ -476,7 +476,6 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
   }
 
   snprintf(_port, 6, "%d", port);
-  memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
 

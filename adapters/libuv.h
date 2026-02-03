@@ -145,7 +145,7 @@ static void redisLibuvCleanup(void *privdata) {
   ac->ev.cleanup = redisLibuvCleanup;
   ac->ev.scheduleTimer = redisLibuvSetTimeout;
 
-  auto *p = (redisLibuvEvents *)hi_calloc(1, sizeof(*p));
+  auto *p = (redisLibuvEvents *)hi_calloc(1, sizeof(redisLibuvEvents));
   if (p == nullptr)
     return REDIS_ERR;
 

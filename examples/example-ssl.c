@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  struct timeval tv = {1, 500000}; // 1.5 seconds
+  struct timeval tv = {.tv_sec = 1, .tv_usec = 500'000}; // 1.5 seconds
   redisOptions options = {0};
   REDIS_OPTIONS_SET_TCP(&options, hostname, port);
   options.connect_timeout = &tv;

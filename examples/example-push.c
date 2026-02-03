@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define KEY_COUNT 5
+static constexpr unsigned int KEY_COUNT = 5;
 
 #define panicAbort(fmt, ...)                                                                       \
   do {                                                                                             \
@@ -77,7 +77,7 @@ static void enableClientTracking(redisContext *c) {
 
 void pushReplyHandler(void *privdata, void *r) {
   redisReply *reply = r;
-  int *invalidations = privdata;
+  unsigned int *invalidations = privdata;
 
   /* Sanity check on the invalidation reply */
   if (reply->type != REDIS_REPLY_PUSH || reply->elements != 2 ||
@@ -89,7 +89,7 @@ void pushReplyHandler(void *privdata, void *r) {
   /* Increment our invalidation count */
   *invalidations += 1;
 
-  printf("pushReplyHandler(): INVALIDATE '%s' (invalidation count: %d)\n",
+  printf("pushReplyHandler(): INVALIDATE '%s' (invalidation count: %u)\n",
          reply->element[1]->element[0]->str, *invalidations);
 
   freeReplyObject(reply);
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
     printf("            main(): SET REPLY OK\n");
   }
 
-  printf("\nTotal detected invalidations: %d, expected: %d\n", invalidations, KEY_COUNT);
+  printf("\nTotal detected invalidations: %u, expected: %u\n", invalidations, KEY_COUNT);
 
   /* PING server */
   redisFree(c);

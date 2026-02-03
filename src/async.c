@@ -57,11 +57,8 @@ static unsigned int callbackHash(const void *key) {
   return dictGenHashFunction((const unsigned char *)key, sdslen((const sds)key));
 }
 
-static void *callbackValDup(void *privdata, const void *src) {
-  ((void)privdata);
-  redisCallback *dup;
-
-  dup = hi_malloc(sizeof(*dup));
+static void *callbackValDup([[maybe_unused]] void *privdata, const void *src) {
+  auto *dup = hi_malloc(sizeof(redisCallback));
   if (dup == nullptr)
     return nullptr;
 
@@ -69,24 +66,20 @@ static void *callbackValDup(void *privdata, const void *src) {
   return dup;
 }
 
-static int callbackKeyCompare(void *privdata, const void *key1, const void *key2) {
-  int l1, l2;
-  ((void)privdata);
-
-  l1 = sdslen((const sds)key1);
-  l2 = sdslen((const sds)key2);
+static int callbackKeyCompare([[maybe_unused]] void *privdata, const void *key1,
+                              const void *key2) {
+  auto l1 = sdslen((const sds)key1);
+  auto l2 = sdslen((const sds)key2);
   if (l1 != l2)
     return 0;
   return memcmp(key1, key2, l1) == 0;
 }
 
-static void callbackKeyDestructor(void *privdata, void *key) {
-  ((void)privdata);
+static void callbackKeyDestructor([[maybe_unused]] void *privdata, void *key) {
   sdsfree((sds)key);
 }
 
-static void callbackValDestructor(void *privdata, void *val) {
-  ((void)privdata);
+static void callbackValDestructor([[maybe_unused]] void *privdata, void *val) {
   hi_free(val);
 }
 

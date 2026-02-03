@@ -9,8 +9,14 @@ static void example_argv_command(redisContext *c, size_t n) {
   redisReply *reply;
 
   /* We're allocating two additional elements for command and key */
-  argv = malloc(sizeof(*argv) * (2 + n));
-  argvlen = malloc(sizeof(*argvlen) * (2 + n));
+  argv = calloc(2 + n, sizeof(*argv));
+  argvlen = calloc(2 + n, sizeof(*argvlen));
+  if (argv == nullptr || argvlen == nullptr) {
+    fprintf(stderr, "Error: out of memory\n");
+    free(argv);
+    free(argvlen);
+    exit(1);
+  }
 
   /* First the command */
   argv[0] = (char *)"RPUSH";
@@ -24,6 +30,15 @@ static void example_argv_command(redisContext *c, size_t n) {
   for (size_t i = 2; i < (n + 2); i++) {
     argvlen[i] = snprintf(tmp, sizeof(tmp), "argv-element-%zu", i - 2);
     argv[i] = strdup(tmp);
+    if (argv[i] == nullptr) {
+      fprintf(stderr, "Error: out of memory\n");
+      for (size_t k = 2; k < i; k++) {
+        free(argv[k]);
+      }
+      free(argv);
+      free(argvlen);
+      exit(1);
+    }
   }
 
   /* Execute the command using redisCommandArgv.  We're sending the arguments
@@ -52,14 +67,15 @@ static void example_argv_command(redisContext *c, size_t n) {
 }
 
 int main(int argc, char **argv) {
-  unsigned int j, isunix = 0;
+  unsigned int j;
+  bool isunix = false;
   redisContext *c;
   redisReply *reply;
   const char *hostname = (argc > 1) ? argv[1] : "127.0.0.1";
 
   if (argc > 2) {
     if (*argv[2] == 'u' || *argv[2] == 'U') {
-      isunix = 1;
+      isunix = true;
       /* in this case, host is the path to the unix socket */
       printf("Will connect to unix socket @%s\n", hostname);
     }
@@ -67,7 +83,7 @@ int main(int argc, char **argv) {
 
   int port = (argc > 2) ? atoi(argv[2]) : 6379;
 
-  struct timeval timeout = {1, 500000}; // 1.5 seconds
+  struct timeval timeout = {.tv_sec = 1, .tv_usec = 500'000}; // 1.5 seconds
   if (isunix) {
     c = redisConnectUnixWithTimeout(hostname, timeout);
   } else {

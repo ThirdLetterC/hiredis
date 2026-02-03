@@ -724,8 +724,7 @@ redisReader *redisReaderCreate() {
   return redisReaderCreateWithFunctions(&defaultFunctions);
 }
 
-static void redisPushAutoFree(void *privdata, void *reply) {
-  (void)privdata;
+static void redisPushAutoFree([[maybe_unused]] void *privdata, void *reply) {
   freeReplyObject(reply);
 }
 
