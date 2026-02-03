@@ -113,8 +113,8 @@ static int _initWinsock() {
   return 1;
 }
 
-int win32_getaddrinfo(const char *node, const char *service,
-                      const struct addrinfo *hints, struct addrinfo **res) {
+int win32_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
+                      struct addrinfo **res) {
   /* Note: This function is likely to be called before other functions, so run
    * init here. */
   if (!_initWinsock()) {
@@ -176,7 +176,9 @@ const char *win32_gai_strerror(int errcode) {
   return gai_strerror(errcode);
 }
 
-void win32_freeaddrinfo(struct addrinfo *res) { freeaddrinfo(res); }
+void win32_freeaddrinfo(struct addrinfo *res) {
+  freeaddrinfo(res);
+}
 
 SOCKET win32_socket(int domain, int type, int protocol) {
   SOCKET s;
@@ -203,8 +205,7 @@ int win32_bind(SOCKET sockfd, const struct sockaddr *addr, socklen_t addrlen) {
   return ret != SOCKET_ERROR ? ret : -1;
 }
 
-int win32_connect(SOCKET sockfd, const struct sockaddr *addr,
-                  socklen_t addrlen) {
+int win32_connect(SOCKET sockfd, const struct sockaddr *addr, socklen_t addrlen) {
   int ret = connect(sockfd, addr, addrlen);
   _updateErrno(ret != SOCKET_ERROR);
 
@@ -224,11 +225,9 @@ int win32_connect(SOCKET sockfd, const struct sockaddr *addr,
   return ret != SOCKET_ERROR ? ret : -1;
 }
 
-int win32_getsockopt(SOCKET sockfd, int level, int optname, void *optval,
-                     socklen_t *optlen) {
+int win32_getsockopt(SOCKET sockfd, int level, int optname, void *optval, socklen_t *optlen) {
   int ret = 0;
-  if ((level == SOL_SOCKET) &&
-      ((optname == SO_RCVTIMEO) || (optname == SO_SNDTIMEO))) {
+  if ((level == SOL_SOCKET) && ((optname == SO_RCVTIMEO) || (optname == SO_SNDTIMEO))) {
     if (*optlen >= sizeof(struct timeval)) {
       struct timeval *tv = optval;
       DWORD timeout = 0;
@@ -255,15 +254,12 @@ int win32_getsockopt(SOCKET sockfd, int level, int optname, void *optval,
   return ret != SOCKET_ERROR ? ret : -1;
 }
 
-int win32_setsockopt(SOCKET sockfd, int level, int optname, const void *optval,
-                     socklen_t optlen) {
+int win32_setsockopt(SOCKET sockfd, int level, int optname, const void *optval, socklen_t optlen) {
   int ret = 0;
-  if ((level == SOL_SOCKET) &&
-      ((optname == SO_RCVTIMEO) || (optname == SO_SNDTIMEO))) {
+  if ((level == SOL_SOCKET) && ((optname == SO_RCVTIMEO) || (optname == SO_SNDTIMEO))) {
     const struct timeval *tv = optval;
     DWORD timeout = tv->tv_sec * 1000 + tv->tv_usec / 1000;
-    ret = setsockopt(sockfd, level, optname, (const char *)&timeout,
-                     sizeof(DWORD));
+    ret = setsockopt(sockfd, level, optname, (const char *)&timeout, sizeof(DWORD));
   } else {
     ret = setsockopt(sockfd, level, optname, (const char *)optval, optlen);
   }
@@ -304,8 +300,8 @@ int win32_redisKeepAlive(SOCKET sockfd, int interval_ms) {
   cfg.keepaliveinterval = interval_ms;
   cfg.keepalivetime = interval_ms;
 
-  res = WSAIoctl(sockfd, SIO_KEEPALIVE_VALS, &cfg, sizeof(struct tcp_keepalive),
-                 nullptr, 0, &bytes_in, nullptr, nullptr);
+  res = WSAIoctl(sockfd, SIO_KEEPALIVE_VALS, &cfg, sizeof(struct tcp_keepalive), nullptr, 0,
+                 &bytes_in, nullptr, nullptr);
 
   return res == 0 ? 0 : _wsaErrorToErrno(res);
 }

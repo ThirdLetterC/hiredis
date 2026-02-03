@@ -96,9 +96,15 @@ redisContextFuncs redisContextSSLFuncs;
 
 #ifdef HIREDIS_USE_CRYPTO_LOCKS
 typedef pthread_mutex_t sslLockType;
-static void sslLockInit(sslLockType *l) { pthread_mutex_init(l, nullptr); }
-static void sslLockAcquire(sslLockType *l) { pthread_mutex_lock(l); }
-static void sslLockRelease(sslLockType *l) { pthread_mutex_unlock(l); }
+static void sslLockInit(sslLockType *l) {
+  pthread_mutex_init(l, nullptr);
+}
+static void sslLockAcquire(sslLockType *l) {
+  pthread_mutex_lock(l);
+}
+static void sslLockRelease(sslLockType *l) {
+  pthread_mutex_unlock(l);
+}
 
 static sslLockType *ossl_locks;
 
@@ -192,12 +198,9 @@ void redisFreeSSLContext(redisSSLContext *ctx) {
  * redisSSLContext helper context initialization.
  */
 
-redisSSLContext *redisCreateSSLContext(const char *cacert_filename,
-                                       const char *capath,
-                                       const char *cert_filename,
-                                       const char *private_key_filename,
-                                       const char *server_name,
-                                       redisSSLContextError *error) {
+redisSSLContext *redisCreateSSLContext(const char *cacert_filename, const char *capath,
+                                       const char *cert_filename, const char *private_key_filename,
+                                       const char *server_name, redisSSLContextError *error) {
   redisSSLOptions options = {
       .cacert_filename = cacert_filename,
       .capath = capath,
@@ -239,8 +242,8 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_1_1_0
   SSL_CTX_set_min_proto_version(ctx->ssl_ctx, TLS1_2_VERSION);
 #else
-  SSL_CTX_set_options(ctx->ssl_ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
-                                        SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
+  SSL_CTX_set_options(ctx->ssl_ctx,
+                      SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
 #endif
 
   SSL_CTX_set_verify(ctx->ssl_ctx, options->verify_mode, nullptr);
@@ -272,8 +275,7 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
         *error = REDIS_SSL_CTX_CLIENT_CERT_LOAD_FAILED;
       goto error;
     }
-    if (!SSL_CTX_use_PrivateKey_file(ctx->ssl_ctx, private_key_filename,
-                                     SSL_FILETYPE_PEM)) {
+    if (!SSL_CTX_use_PrivateKey_file(ctx->ssl_ctx, private_key_filename, SSL_FILETYPE_PEM)) {
       if (error)
         *error = REDIS_SSL_CTX_PRIVATE_KEY_LOAD_FAILED;
       goto error;
@@ -335,8 +337,7 @@ static int redisSSLConnect(redisContext *c, SSL *ssl) {
       snprintf(err, sizeof(err) - 1, "SSL_connect failed: %s", strerror(errno));
     else {
       unsigned long e = ERR_peek_last_error();
-      snprintf(err, sizeof(err) - 1, "SSL_connect failed: %s",
-               ERR_reason_error_string(e));
+      snprintf(err, sizeof(err) - 1, "SSL_connect failed: %s", ERR_reason_error_string(e));
     }
     __redisSetError(c, REDIS_ERR_IO, err);
   }
@@ -359,8 +360,7 @@ int redisInitiateSSL(redisContext *c, SSL *ssl) {
  * don't manage their own SSL objects.
  */
 
-int redisInitiateSSLWithContext(redisContext *c,
-                                redisSSLContext *redis_ssl_ctx) {
+int redisInitiateSSLWithContext(redisContext *c, redisSSLContext *redis_ssl_ctx) {
   if (!c || !redis_ssl_ctx)
     return REDIS_ERR;
 

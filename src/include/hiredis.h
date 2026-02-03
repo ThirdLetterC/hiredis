@@ -87,14 +87,12 @@
 
 /* Flag that indicates the user does not want replies to be automatically freed
  */
-[[maybe_unused]] static constexpr int REDIS_NO_AUTO_FREE_REPLIES =
-    0b0100'0000'0000;
+[[maybe_unused]] static constexpr int REDIS_NO_AUTO_FREE_REPLIES = 0b0100'0000'0000;
 
 /* Flags to prefer IPv6 or IPv4 when doing DNS lookup. (If both are set,
  * AF_UNSPEC is used.) */
 [[maybe_unused]] static constexpr int REDIS_PREFER_IPV4 = 0b1000'0000'0000;
-[[maybe_unused]] static constexpr int REDIS_PREFER_IPV6 =
-    0b0001'0000'0000'0000;
+[[maybe_unused]] static constexpr int REDIS_PREFER_IPV6 = 0b0001'0000'0000'0000;
 
 [[maybe_unused]] static constexpr int REDIS_KEEPALIVE_INTERVAL = 15; /* seconds */
 
@@ -117,16 +115,16 @@ extern "C" {
 
 /* This is the reply object returned by redisCommand() */
 typedef struct redisReply {
-  int type;          /* REDIS_REPLY_* */
-  long long integer; /* The integer when type is REDIS_REPLY_INTEGER */
-  double dval;       /* The double when type is REDIS_REPLY_DOUBLE */
-  size_t len;        /* Length of string */
-  char *str;         /* Used for REDIS_REPLY_ERROR, REDIS_REPLY_STRING
-                        REDIS_REPLY_VERB, REDIS_REPLY_DOUBLE (in additional to dval),
-                        and REDIS_REPLY_BIGNUM. */
-  char vtype[4];     /* Used for REDIS_REPLY_VERB, contains the null
-                        terminated 3 character content type, such as "txt". */
-  size_t elements;   /* number of elements, for REDIS_REPLY_ARRAY */
+  int type;                    /* REDIS_REPLY_* */
+  long long integer;           /* The integer when type is REDIS_REPLY_INTEGER */
+  double dval;                 /* The double when type is REDIS_REPLY_DOUBLE */
+  size_t len;                  /* Length of string */
+  char *str;                   /* Used for REDIS_REPLY_ERROR, REDIS_REPLY_STRING
+                                  REDIS_REPLY_VERB, REDIS_REPLY_DOUBLE (in additional to dval),
+                                  and REDIS_REPLY_BIGNUM. */
+  char vtype[4];               /* Used for REDIS_REPLY_VERB, contains the null
+                                  terminated 3 character content type, such as "txt". */
+  size_t elements;             /* number of elements, for REDIS_REPLY_ARRAY */
   struct redisReply **element; /* elements vector for REDIS_REPLY_ARRAY */
 } redisReply;
 
@@ -138,8 +136,7 @@ void freeReplyObject(void *reply);
 /* Functions to format a command according to the protocol. */
 int redisvFormatCommand(char **target, const char *format, va_list ap);
 int redisFormatCommand(char **target, const char *format, ...);
-long long redisFormatCommandArgv(char **target, int argc, const char **argv,
-                                 const size_t *argvlen);
+long long redisFormatCommandArgv(char **target, int argc, const char **argv, const size_t *argvlen);
 long long redisFormatSdsCommandArgv(sds *target, int argc, const char **argv,
                                     const size_t *argvlen);
 void redisFreeCommand(char *cmd);
@@ -216,23 +213,23 @@ typedef struct {
 /**
  * Helper macros to initialize options to their specified fields.
  */
-#define REDIS_OPTIONS_SET_TCP(opts, ip_, port_)                                \
-  do {                                                                         \
-    (opts)->type = REDIS_CONN_TCP;                                             \
-    (opts)->endpoint.tcp.ip = ip_;                                             \
-    (opts)->endpoint.tcp.port = port_;                                         \
+#define REDIS_OPTIONS_SET_TCP(opts, ip_, port_)                                                    \
+  do {                                                                                             \
+    (opts)->type = REDIS_CONN_TCP;                                                                 \
+    (opts)->endpoint.tcp.ip = ip_;                                                                 \
+    (opts)->endpoint.tcp.port = port_;                                                             \
   } while (0)
 
-#define REDIS_OPTIONS_SET_UNIX(opts, path)                                     \
-  do {                                                                         \
-    (opts)->type = REDIS_CONN_UNIX;                                            \
-    (opts)->endpoint.unix_socket = path;                                       \
+#define REDIS_OPTIONS_SET_UNIX(opts, path)                                                         \
+  do {                                                                                             \
+    (opts)->type = REDIS_CONN_UNIX;                                                                \
+    (opts)->endpoint.unix_socket = path;                                                           \
   } while (0)
 
-#define REDIS_OPTIONS_SET_PRIVDATA(opts, data, dtor)                           \
-  do {                                                                         \
-    (opts)->privdata = data;                                                   \
-    (opts)->free_privdata = dtor;                                              \
+#define REDIS_OPTIONS_SET_PRIVDATA(opts, data, dtor)                                               \
+  do {                                                                                             \
+    (opts)->privdata = data;                                                                       \
+    (opts)->free_privdata = dtor;                                                                  \
   } while (0)
 
 typedef struct redisContextFuncs {
@@ -291,20 +288,17 @@ typedef struct redisContext {
   redisPushFn *push_cb;
 } redisContext;
 
-[[nodiscard]] redisContext *
-redisConnectWithOptions(const redisOptions *options);
+[[nodiscard]] redisContext *redisConnectWithOptions(const redisOptions *options);
 [[nodiscard]] redisContext *redisConnect(const char *ip, int port);
-[[nodiscard]] redisContext *
-redisConnectWithTimeout(const char *ip, int port, const struct timeval tv);
+[[nodiscard]] redisContext *redisConnectWithTimeout(const char *ip, int port,
+                                                    const struct timeval tv);
 [[nodiscard]] redisContext *redisConnectNonBlock(const char *ip, int port);
 [[nodiscard]] redisContext *redisConnectBindNonBlock(const char *ip, int port,
                                                      const char *source_addr);
-[[nodiscard]] redisContext *
-redisConnectBindNonBlockWithReuse(const char *ip, int port,
-                                  const char *source_addr);
+[[nodiscard]] redisContext *redisConnectBindNonBlockWithReuse(const char *ip, int port,
+                                                              const char *source_addr);
 [[nodiscard]] redisContext *redisConnectUnix(const char *path);
-[[nodiscard]] redisContext *
-redisConnectUnixWithTimeout(const char *path, const struct timeval tv);
+[[nodiscard]] redisContext *redisConnectUnixWithTimeout(const char *path, const struct timeval tv);
 [[nodiscard]] redisContext *redisConnectUnixNonBlock(const char *path);
 [[nodiscard]] redisContext *redisConnectFd(redisFD fd);
 
@@ -344,19 +338,16 @@ int redisAppendFormattedCommand(redisContext *c, const char *cmd, size_t len);
  * to get a pipeline of commands. */
 int redisvAppendCommand(redisContext *c, const char *format, va_list ap);
 int redisAppendCommand(redisContext *c, const char *format, ...);
-int redisAppendCommandArgv(redisContext *c, int argc, const char **argv,
-                           const size_t *argvlen);
+int redisAppendCommandArgv(redisContext *c, int argc, const char **argv, const size_t *argvlen);
 
 /* Issue a command to Redis. In a blocking context, it is identical to calling
  * redisAppendCommand, followed by redisGetReply. The function will return
  * nullptr if there was an error in performing the request, otherwise it will
  * return the reply. In a non-blocking context, it is identical to calling
  * only redisAppendCommand and will always return nullptr. */
-[[nodiscard]] void *redisvCommand(redisContext *c, const char *format,
-                                  va_list ap);
+[[nodiscard]] void *redisvCommand(redisContext *c, const char *format, va_list ap);
 [[nodiscard]] void *redisCommand(redisContext *c, const char *format, ...);
-[[nodiscard]] void *redisCommandArgv(redisContext *c, int argc,
-                                     const char **argv,
+[[nodiscard]] void *redisCommandArgv(redisContext *c, int argc, const char **argv,
                                      const size_t *argvlen);
 
 #ifdef __cplusplus

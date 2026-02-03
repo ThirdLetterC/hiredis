@@ -46,35 +46,29 @@
 #include "net.h"
 #include "sds.h"
 
-extern int redisContextUpdateConnectTimeout(redisContext *c,
-                                            const struct timeval *timeout);
-extern int redisContextUpdateCommandTimeout(redisContext *c,
-                                            const struct timeval *timeout);
+extern int redisContextUpdateConnectTimeout(redisContext *c, const struct timeval *timeout);
+extern int redisContextUpdateCommandTimeout(redisContext *c, const struct timeval *timeout);
 
-static redisContextFuncs redisContextDefaultFuncs = {
-    .close = redisNetClose,
-    .free_privctx = nullptr,
-    .async_read = redisAsyncRead,
-    .async_write = redisAsyncWrite,
-    .read = redisNetRead,
-    .write = redisNetWrite};
+static redisContextFuncs redisContextDefaultFuncs = {.close = redisNetClose,
+                                                     .free_privctx = nullptr,
+                                                     .async_read = redisAsyncRead,
+                                                     .async_write = redisAsyncWrite,
+                                                     .read = redisNetRead,
+                                                     .write = redisNetWrite};
 
 static redisReply *createReplyObject(int type);
-static void *createStringObject(const redisReadTask *task, char *str,
-                                size_t len);
+static void *createStringObject(const redisReadTask *task, char *str, size_t len);
 static void *createArrayObject(const redisReadTask *task, size_t elements);
 static void *createIntegerObject(const redisReadTask *task, long long value);
-static void *createDoubleObject(const redisReadTask *task, double value,
-                                char *str, size_t len);
+static void *createDoubleObject(const redisReadTask *task, double value, char *str, size_t len);
 static void *createNilObject(const redisReadTask *task);
 static void *createBoolObject(const redisReadTask *task, int bval);
 
 /* Default set of functions to build the reply. Keep in mind that such a
  * function returning nullptr is interpreted as OOM. */
 static redisReplyObjectFunctions defaultFunctions = {
-    createStringObject, createArrayObject, createIntegerObject,
-    createDoubleObject, createNilObject,   createBoolObject,
-    freeReplyObject};
+    createStringObject, createArrayObject, createIntegerObject, createDoubleObject,
+    createNilObject,    createBoolObject,  freeReplyObject};
 
 /* Create a reply object */
 static redisReply *createReplyObject(int type) {
@@ -123,8 +117,7 @@ void freeReplyObject(void *reply) {
   hi_free(r);
 }
 
-static void *createStringObject(const redisReadTask *task, char *str,
-                                size_t len) {
+static void *createStringObject(const redisReadTask *task, char *str, size_t len) {
   redisReply *r, *parent;
   char *buf;
 
@@ -160,10 +153,9 @@ static void *createStringObject(const redisReadTask *task, char *str,
 
   if (task->parent) {
     parent = task->parent->obj;
-    assert(parent->type == REDIS_REPLY_ARRAY ||
-           parent->type == REDIS_REPLY_MAP ||
-           parent->type == REDIS_REPLY_ATTR ||
-           parent->type == REDIS_REPLY_SET || parent->type == REDIS_REPLY_PUSH);
+    assert(parent->type == REDIS_REPLY_ARRAY || parent->type == REDIS_REPLY_MAP ||
+           parent->type == REDIS_REPLY_ATTR || parent->type == REDIS_REPLY_SET ||
+           parent->type == REDIS_REPLY_PUSH);
     parent->element[task->idx] = r;
   }
   return r;
@@ -192,10 +184,9 @@ static void *createArrayObject(const redisReadTask *task, size_t elements) {
 
   if (task->parent) {
     parent = task->parent->obj;
-    assert(parent->type == REDIS_REPLY_ARRAY ||
-           parent->type == REDIS_REPLY_MAP ||
-           parent->type == REDIS_REPLY_ATTR ||
-           parent->type == REDIS_REPLY_SET || parent->type == REDIS_REPLY_PUSH);
+    assert(parent->type == REDIS_REPLY_ARRAY || parent->type == REDIS_REPLY_MAP ||
+           parent->type == REDIS_REPLY_ATTR || parent->type == REDIS_REPLY_SET ||
+           parent->type == REDIS_REPLY_PUSH);
     parent->element[task->idx] = r;
   }
   return r;
@@ -212,17 +203,15 @@ static void *createIntegerObject(const redisReadTask *task, long long value) {
 
   if (task->parent) {
     parent = task->parent->obj;
-    assert(parent->type == REDIS_REPLY_ARRAY ||
-           parent->type == REDIS_REPLY_MAP ||
-           parent->type == REDIS_REPLY_ATTR ||
-           parent->type == REDIS_REPLY_SET || parent->type == REDIS_REPLY_PUSH);
+    assert(parent->type == REDIS_REPLY_ARRAY || parent->type == REDIS_REPLY_MAP ||
+           parent->type == REDIS_REPLY_ATTR || parent->type == REDIS_REPLY_SET ||
+           parent->type == REDIS_REPLY_PUSH);
     parent->element[task->idx] = r;
   }
   return r;
 }
 
-static void *createDoubleObject(const redisReadTask *task, double value,
-                                char *str, size_t len) {
+static void *createDoubleObject(const redisReadTask *task, double value, char *str, size_t len) {
   redisReply *r, *parent;
 
   if (len == SIZE_MAX) // Prevents hi_malloc(0) if len equals to SIZE_MAX
@@ -250,10 +239,9 @@ static void *createDoubleObject(const redisReadTask *task, double value,
 
   if (task->parent) {
     parent = task->parent->obj;
-    assert(parent->type == REDIS_REPLY_ARRAY ||
-           parent->type == REDIS_REPLY_MAP ||
-           parent->type == REDIS_REPLY_ATTR ||
-           parent->type == REDIS_REPLY_SET || parent->type == REDIS_REPLY_PUSH);
+    assert(parent->type == REDIS_REPLY_ARRAY || parent->type == REDIS_REPLY_MAP ||
+           parent->type == REDIS_REPLY_ATTR || parent->type == REDIS_REPLY_SET ||
+           parent->type == REDIS_REPLY_PUSH);
     parent->element[task->idx] = r;
   }
   return r;
@@ -268,10 +256,9 @@ static void *createNilObject(const redisReadTask *task) {
 
   if (task->parent) {
     parent = task->parent->obj;
-    assert(parent->type == REDIS_REPLY_ARRAY ||
-           parent->type == REDIS_REPLY_MAP ||
-           parent->type == REDIS_REPLY_ATTR ||
-           parent->type == REDIS_REPLY_SET || parent->type == REDIS_REPLY_PUSH);
+    assert(parent->type == REDIS_REPLY_ARRAY || parent->type == REDIS_REPLY_MAP ||
+           parent->type == REDIS_REPLY_ATTR || parent->type == REDIS_REPLY_SET ||
+           parent->type == REDIS_REPLY_PUSH);
     parent->element[task->idx] = r;
   }
   return r;
@@ -288,10 +275,9 @@ static void *createBoolObject(const redisReadTask *task, int bval) {
 
   if (task->parent) {
     parent = task->parent->obj;
-    assert(parent->type == REDIS_REPLY_ARRAY ||
-           parent->type == REDIS_REPLY_MAP ||
-           parent->type == REDIS_REPLY_ATTR ||
-           parent->type == REDIS_REPLY_SET || parent->type == REDIS_REPLY_PUSH);
+    assert(parent->type == REDIS_REPLY_ARRAY || parent->type == REDIS_REPLY_MAP ||
+           parent->type == REDIS_REPLY_ATTR || parent->type == REDIS_REPLY_SET ||
+           parent->type == REDIS_REPLY_PUSH);
     parent->element[task->idx] = r;
   }
   return r;
@@ -316,14 +302,16 @@ static uint32_t countDigits(uint64_t v) {
 }
 
 /* Helper that calculates the bulk length given a certain string length. */
-static size_t bulklen(size_t len) { return 1 + countDigits(len) + 2 + len + 2; }
+static size_t bulklen(size_t len) {
+  return 1 + countDigits(len) + 2 + len + 2;
+}
 
 int redisvFormatCommand(char **target, const char *format, va_list ap) {
   const char *c = format;
-  char *cmd = nullptr;   /* final command */
-  int pos;            /* position in final command */
-  sds curarg, newarg; /* current argument */
-  int touched = 0;    /* was the current argument touched? */
+  char *cmd = nullptr; /* final command */
+  int pos;             /* position in final command */
+  sds curarg, newarg;  /* current argument */
+  int touched = 0;     /* was the current argument touched? */
   char **curargv = nullptr, **newargv = nullptr;
   int argc = 0;
   int totlen = 0;
@@ -536,8 +524,7 @@ int redisvFormatCommand(char **target, const char *format, va_list ap) {
   pos = written;
   for (j = 0; j < argc; j++) {
     auto remaining = (size_t)totlen - (size_t)pos + 1;
-    written =
-        snprintf(cmd + pos, remaining, "$%zu\r\n", sdslen(curargv[j]));
+    written = snprintf(cmd + pos, remaining, "$%zu\r\n", sdslen(curargv[j]));
     if (written < 0 || (size_t)written >= remaining) {
       error_type = -2;
       goto cleanup;
@@ -656,7 +643,9 @@ long long redisFormatSdsCommandArgv(sds *target, int argc, const char **argv,
   return totlen;
 }
 
-void redisFreeSdsCommand(sds cmd) { sdsfree(cmd); }
+void redisFreeSdsCommand(sds cmd) {
+  sdsfree(cmd);
+}
 
 /* Format a command according to the Redis protocol. This function takes the
  * number of arguments, an array with arguments and an array with their
@@ -666,7 +655,7 @@ void redisFreeSdsCommand(sds cmd) { sdsfree(cmd); }
 long long redisFormatCommandArgv(char **target, int argc, const char **argv,
                                  const size_t *argvlen) {
   char *cmd = nullptr; /* final command */
-  size_t pos;       /* position in final command */
+  size_t pos;          /* position in final command */
   size_t len, totlen;
   int j;
 
@@ -713,7 +702,9 @@ long long redisFormatCommandArgv(char **target, int argc, const char **argv,
   return totlen;
 }
 
-void redisFreeCommand(char *cmd) { hi_free(cmd); }
+void redisFreeCommand(char *cmd) {
+  hi_free(cmd);
+}
 
 void __redisSetError(redisContext *c, int type, const char *str) {
   size_t len;
@@ -821,8 +812,8 @@ int redisReconnect(redisContext *c) {
 
   int ret = REDIS_ERR;
   if (c->connection_type == REDIS_CONN_TCP) {
-    ret = redisContextConnectBindTcp(c, c->tcp.host, c->tcp.port,
-                                     c->connect_timeout, c->tcp.source_addr);
+    ret = redisContextConnectBindTcp(c, c->tcp.host, c->tcp.port, c->connect_timeout,
+                                     c->tcp.source_addr);
   } else if (c->connection_type == REDIS_CONN_UNIX) {
     ret = redisContextConnectUnix(c, c->unix_sock.path, c->connect_timeout);
   } else {
@@ -832,8 +823,7 @@ int redisReconnect(redisContext *c) {
     ret = REDIS_ERR;
   }
 
-  if (c->command_timeout != nullptr && (c->flags & REDIS_BLOCK) &&
-      c->fd != REDIS_INVALID_FD) {
+  if (c->command_timeout != nullptr && (c->flags & REDIS_BLOCK) && c->fd != REDIS_INVALID_FD) {
     redisContextSetTimeout(c, *c->command_timeout);
   }
 
@@ -877,21 +867,17 @@ redisContext *redisConnectWithOptions(const redisOptions *options) {
   c->privdata = options->privdata;
   c->free_privdata = options->free_privdata;
 
-  if (redisContextUpdateConnectTimeout(c, options->connect_timeout) !=
-          REDIS_OK ||
-      redisContextUpdateCommandTimeout(c, options->command_timeout) !=
-          REDIS_OK) {
+  if (redisContextUpdateConnectTimeout(c, options->connect_timeout) != REDIS_OK ||
+      redisContextUpdateCommandTimeout(c, options->command_timeout) != REDIS_OK) {
     __redisSetError(c, REDIS_ERR_OOM, "Out of memory");
     return c;
   }
 
   if (options->type == REDIS_CONN_TCP) {
-    redisContextConnectBindTcp(
-        c, options->endpoint.tcp.ip, options->endpoint.tcp.port,
-        options->connect_timeout, options->endpoint.tcp.source_addr);
+    redisContextConnectBindTcp(c, options->endpoint.tcp.ip, options->endpoint.tcp.port,
+                               options->connect_timeout, options->endpoint.tcp.source_addr);
   } else if (options->type == REDIS_CONN_UNIX) {
-    redisContextConnectUnix(c, options->endpoint.unix_socket,
-                            options->connect_timeout);
+    redisContextConnectUnix(c, options->endpoint.unix_socket, options->connect_timeout);
   } else if (options->type == REDIS_CONN_USERFD) {
     c->fd = options->endpoint.fd;
     c->flags |= REDIS_CONNECTED;
@@ -900,8 +886,8 @@ redisContext *redisConnectWithOptions(const redisOptions *options) {
     return nullptr;
   }
 
-  if (c->err == 0 && c->fd != REDIS_INVALID_FD &&
-      options->command_timeout != nullptr && (c->flags & REDIS_BLOCK)) {
+  if (c->err == 0 && c->fd != REDIS_INVALID_FD && options->command_timeout != nullptr &&
+      (c->flags & REDIS_BLOCK)) {
     redisContextSetTimeout(c, *options->command_timeout);
   }
 
@@ -917,8 +903,7 @@ redisContext *redisConnect(const char *ip, int port) {
   return redisConnectWithOptions(&options);
 }
 
-redisContext *redisConnectWithTimeout(const char *ip, int port,
-                                      const struct timeval tv) {
+redisContext *redisConnectWithTimeout(const char *ip, int port, const struct timeval tv) {
   redisOptions options = {0};
   REDIS_OPTIONS_SET_TCP(&options, ip, port);
   options.connect_timeout = &tv;
@@ -932,8 +917,7 @@ redisContext *redisConnectNonBlock(const char *ip, int port) {
   return redisConnectWithOptions(&options);
 }
 
-redisContext *redisConnectBindNonBlock(const char *ip, int port,
-                                       const char *source_addr) {
+redisContext *redisConnectBindNonBlock(const char *ip, int port, const char *source_addr) {
   redisOptions options = {0};
   REDIS_OPTIONS_SET_TCP(&options, ip, port);
   options.endpoint.tcp.source_addr = source_addr;
@@ -941,8 +925,7 @@ redisContext *redisConnectBindNonBlock(const char *ip, int port,
   return redisConnectWithOptions(&options);
 }
 
-redisContext *redisConnectBindNonBlockWithReuse(const char *ip, int port,
-                                                const char *source_addr) {
+redisContext *redisConnectBindNonBlockWithReuse(const char *ip, int port, const char *source_addr) {
   redisOptions options = {0};
   REDIS_OPTIONS_SET_TCP(&options, ip, port);
   options.endpoint.tcp.source_addr = source_addr;
@@ -956,8 +939,7 @@ redisContext *redisConnectUnix(const char *path) {
   return redisConnectWithOptions(&options);
 }
 
-redisContext *redisConnectUnixWithTimeout(const char *path,
-                                          const struct timeval tv) {
+redisContext *redisConnectUnixWithTimeout(const char *path, const struct timeval tv) {
   redisOptions options = {0};
   REDIS_OPTIONS_SET_UNIX(&options, path);
   options.connect_timeout = &tv;
@@ -1199,8 +1181,7 @@ int redisAppendCommand(redisContext *c, const char *format, ...) {
   return ret;
 }
 
-int redisAppendCommandArgv(redisContext *c, int argc, const char **argv,
-                           const size_t *argvlen) {
+int redisAppendCommandArgv(redisContext *c, int argc, const char **argv, const size_t *argvlen) {
   sds cmd;
   long long len;
 
@@ -1255,8 +1236,7 @@ void *redisCommand(redisContext *c, const char *format, ...) {
   return reply;
 }
 
-void *redisCommandArgv(redisContext *c, int argc, const char **argv,
-                       const size_t *argvlen) {
+void *redisCommandArgv(redisContext *c, int argc, const char **argv, const size_t *argvlen) {
   if (redisAppendCommandArgv(c, argc, argv, argvlen) != REDIS_OK)
     return nullptr;
   return __redisBlockForReply(c);

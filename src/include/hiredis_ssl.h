@@ -53,20 +53,20 @@ typedef struct redisSSLContext redisSSLContext;
  */
 
 typedef enum {
-  REDIS_SSL_CTX_NONE = 0,          /* No Error */
-  REDIS_SSL_CTX_CREATE_FAILED,     /* Failed to create OpenSSL SSL_CTX */
-  REDIS_SSL_CTX_CERT_KEY_REQUIRED, /* Client cert and key must both be specified
-                                      or skipped */
-  REDIS_SSL_CTX_CA_CERT_LOAD_FAILED, /* Failed to load CA Certificate or CA Path
-                                      */
-  REDIS_SSL_CTX_CLIENT_CERT_LOAD_FAILED, /* Failed to load client certificate */
+  REDIS_SSL_CTX_NONE = 0,                   /* No Error */
+  REDIS_SSL_CTX_CREATE_FAILED,              /* Failed to create OpenSSL SSL_CTX */
+  REDIS_SSL_CTX_CERT_KEY_REQUIRED,          /* Client cert and key must both be specified
+                                               or skipped */
+  REDIS_SSL_CTX_CA_CERT_LOAD_FAILED,        /* Failed to load CA Certificate or CA Path
+                                             */
+  REDIS_SSL_CTX_CLIENT_CERT_LOAD_FAILED,    /* Failed to load client certificate */
   REDIS_SSL_CTX_CLIENT_DEFAULT_CERT_FAILED, /* Failed to set client default
                                                certificate directory */
   REDIS_SSL_CTX_PRIVATE_KEY_LOAD_FAILED,    /* Failed to load private key */
   REDIS_SSL_CTX_OS_CERTSTORE_OPEN_FAILED,   /* Failed to open system certificate
                                                store */
-  REDIS_SSL_CTX_OS_CERT_ADD_FAILED /* Failed to add CA certificates obtained
-                                      from system to the SSL context */
+  REDIS_SSL_CTX_OS_CERT_ADD_FAILED          /* Failed to add CA certificates obtained
+                                               from system to the SSL context */
 } redisSSLContextError;
 
 /* Constants that mirror OpenSSL's verify modes. By default,
@@ -76,11 +76,9 @@ typedef enum {
  */
 [[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_NONE = 0b0000;
 [[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_PEER = 0b0001;
-[[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_FAIL_IF_NO_PEER_CERT =
-    0b0010;
+[[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_FAIL_IF_NO_PEER_CERT = 0b0010;
 [[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_CLIENT_ONCE = 0b0100;
-[[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_POST_HANDSHAKE =
-    0b1000;
+[[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_POST_HANDSHAKE = 0b1000;
 
 /* Options to create an OpenSSL context. */
 typedef struct {
@@ -128,11 +126,11 @@ int redisInitOpenSSL();
  * (returning a nullptr).
  */
 
-[[nodiscard]] redisSSLContext *
-redisCreateSSLContext(const char *cacert_filename, const char *capath,
-                      const char *cert_filename,
-                      const char *private_key_filename,
-                      const char *server_name, redisSSLContextError *error);
+[[nodiscard]] redisSSLContext *redisCreateSSLContext(const char *cacert_filename,
+                                                     const char *capath, const char *cert_filename,
+                                                     const char *private_key_filename,
+                                                     const char *server_name,
+                                                     redisSSLContextError *error);
 
 /**
  * Helper function to initialize an OpenSSL context that can be used
@@ -144,9 +142,8 @@ redisCreateSSLContext(const char *cacert_filename, const char *capath,
  * If error is non-null, it will be populated in case the context creation fails
  * (returning a nullptr).
  */
-[[nodiscard]] redisSSLContext *
-redisCreateSSLContextWithOptions(redisSSLOptions *options,
-                                 redisSSLContextError *error);
+[[nodiscard]] redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
+                                                                redisSSLContextError *error);
 
 /**
  * Free a previously created OpenSSL context.
@@ -161,8 +158,7 @@ void redisFreeSSLContext(redisSSLContext *redis_ssl_ctx);
  * previously created using redisCreateSSLContext().
  */
 
-int redisInitiateSSLWithContext(redisContext *c,
-                                redisSSLContext *redis_ssl_ctx);
+int redisInitiateSSLWithContext(redisContext *c, redisSSLContext *redis_ssl_ctx);
 
 /**
  * Initiate SSL/TLS negotiation on a provided OpenSSL SSL object.

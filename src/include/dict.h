@@ -76,34 +76,32 @@ typedef struct dictIterator {
 [[maybe_unused]] static constexpr unsigned long DICT_HT_INITIAL_SIZE = 4;
 
 /* ------------------------------- Macros ------------------------------------*/
-#define dictFreeEntryVal(ht, entry)                                            \
-  if ((ht)->type->valDestructor)                                               \
+#define dictFreeEntryVal(ht, entry)                                                                \
+  if ((ht)->type->valDestructor)                                                                   \
   (ht)->type->valDestructor((ht)->privdata, (entry)->val)
 
-#define dictSetHashVal(ht, entry, _val_)                                       \
-  do {                                                                         \
-    if ((ht)->type->valDup)                                                    \
-      entry->val = (ht)->type->valDup((ht)->privdata, _val_);                  \
-    else                                                                       \
-      entry->val = (_val_);                                                    \
+#define dictSetHashVal(ht, entry, _val_)                                                           \
+  do {                                                                                             \
+    if ((ht)->type->valDup)                                                                        \
+      entry->val = (ht)->type->valDup((ht)->privdata, _val_);                                      \
+    else                                                                                           \
+      entry->val = (_val_);                                                                        \
   } while (0)
 
-#define dictFreeEntryKey(ht, entry)                                            \
-  if ((ht)->type->keyDestructor)                                               \
+#define dictFreeEntryKey(ht, entry)                                                                \
+  if ((ht)->type->keyDestructor)                                                                   \
   (ht)->type->keyDestructor((ht)->privdata, (entry)->key)
 
-#define dictSetHashKey(ht, entry, _key_)                                       \
-  do {                                                                         \
-    if ((ht)->type->keyDup)                                                    \
-      entry->key = (ht)->type->keyDup((ht)->privdata, _key_);                  \
-    else                                                                       \
-      entry->key = (_key_);                                                    \
+#define dictSetHashKey(ht, entry, _key_)                                                           \
+  do {                                                                                             \
+    if ((ht)->type->keyDup)                                                                        \
+      entry->key = (ht)->type->keyDup((ht)->privdata, _key_);                                      \
+    else                                                                                           \
+      entry->key = (_key_);                                                                        \
   } while (0)
 
-#define dictCompareHashKeys(ht, key1, key2)                                    \
-  (((ht)->type->keyCompare)                                                    \
-       ? (ht)->type->keyCompare((ht)->privdata, key1, key2)                    \
-       : (key1) == (key2))
+#define dictCompareHashKeys(ht, key1, key2)                                                        \
+  (((ht)->type->keyCompare) ? (ht)->type->keyCompare((ht)->privdata, key1, key2) : (key1) == (key2))
 
 #define dictHashKey(ht, key) (ht)->type->hashFunction(key)
 

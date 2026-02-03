@@ -66,8 +66,7 @@
 [[maybe_unused]] static constexpr size_t REDIS_READER_MAX_BUF = 16'384;
 
 /* Default multi-bulk element limit */
-[[maybe_unused]] static constexpr long long REDIS_READER_MAX_ARRAY_ELEMENTS =
-    (1LL << 32) - 1;
+[[maybe_unused]] static constexpr long long REDIS_READER_MAX_ARRAY_ELEMENTS = (1LL << 32) - 1;
 
 #ifdef __cplusplus
 extern "C" {
@@ -113,14 +112,12 @@ typedef struct redisReader {
 } redisReader;
 
 /* Public API for the protocol parser. */
-[[nodiscard]] redisReader *
-redisReaderCreateWithFunctions(redisReplyObjectFunctions *fn);
+[[nodiscard]] redisReader *redisReaderCreateWithFunctions(redisReplyObjectFunctions *fn);
 void redisReaderFree(redisReader *r);
 int redisReaderFeed(redisReader *r, const char *buf, size_t len);
 int redisReaderGetReply(redisReader *r, void **reply);
 
-#define redisReaderSetPrivdata(_r, _p)                                         \
-  (int)(((redisReader *)(_r))->privdata = (_p))
+#define redisReaderSetPrivdata(_r, _p) (int)(((redisReader *)(_r))->privdata = (_p))
 #define redisReaderGetObject(_r) (((redisReader *)(_r))->reply)
 #define redisReaderGetError(_r) (((redisReader *)(_r))->errstr)
 

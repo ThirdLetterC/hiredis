@@ -55,8 +55,7 @@ void __redisSetError(redisContext *c, int type, const char *str);
 
 /* Functions managing dictionary of callbacks for pub/sub. */
 static unsigned int callbackHash(const void *key) {
-  return dictGenHashFunction((const unsigned char *)key,
-                             sdslen((const sds)key));
+  return dictGenHashFunction((const unsigned char *)key, sdslen((const sds)key));
 }
 
 static void *callbackValDup(void *privdata, const void *src) {
@@ -71,8 +70,7 @@ static void *callbackValDup(void *privdata, const void *src) {
   return dup;
 }
 
-static int callbackKeyCompare(void *privdata, const void *key1,
-                              const void *key2) {
+static int callbackKeyCompare(void *privdata, const void *key1, const void *key2) {
   int l1, l2;
   ((void)privdata);
 
@@ -200,8 +198,7 @@ redisAsyncContext *redisAsyncConnect(const char *ip, int port) {
   return redisAsyncConnectWithOptions(&options);
 }
 
-redisAsyncContext *redisAsyncConnectBind(const char *ip, int port,
-                                         const char *source_addr) {
+redisAsyncContext *redisAsyncConnectBind(const char *ip, int port, const char *source_addr) {
   redisOptions options = {0};
   REDIS_OPTIONS_SET_TCP(&options, ip, port);
   options.endpoint.tcp.source_addr = source_addr;
@@ -223,8 +220,7 @@ redisAsyncContext *redisAsyncConnectUnix(const char *path) {
   return redisAsyncConnectWithOptions(&options);
 }
 
-static int redisAsyncSetConnectCallbackImpl(redisAsyncContext *ac,
-                                            redisConnectCallback *fn,
+static int redisAsyncSetConnectCallbackImpl(redisAsyncContext *ac, redisConnectCallback *fn,
                                             redisConnectCallbackNC *fn_nc) {
   /* If either are already set, this is an error */
   if (ac->onConnect || ac->onConnectNC)
@@ -244,18 +240,15 @@ static int redisAsyncSetConnectCallbackImpl(redisAsyncContext *ac,
   return REDIS_OK;
 }
 
-int redisAsyncSetConnectCallback(redisAsyncContext *ac,
-                                 redisConnectCallback *fn) {
+int redisAsyncSetConnectCallback(redisAsyncContext *ac, redisConnectCallback *fn) {
   return redisAsyncSetConnectCallbackImpl(ac, fn, nullptr);
 }
 
-int redisAsyncSetConnectCallbackNC(redisAsyncContext *ac,
-                                   redisConnectCallbackNC *fn) {
+int redisAsyncSetConnectCallbackNC(redisAsyncContext *ac, redisConnectCallbackNC *fn) {
   return redisAsyncSetConnectCallbackImpl(ac, nullptr, fn);
 }
 
-int redisAsyncSetDisconnectCallback(redisAsyncContext *ac,
-                                    redisDisconnectCallback *fn) {
+int redisAsyncSetDisconnectCallback(redisAsyncContext *ac, redisDisconnectCallback *fn) {
   if (ac->onDisconnect == nullptr) {
     ac->onDisconnect = fn;
     return REDIS_OK;
@@ -286,8 +279,7 @@ static int __redisPushCallback(redisCallbackList *list, redisCallback *source) {
   return REDIS_OK;
 }
 
-static int __redisShiftCallback(redisCallbackList *list,
-                                redisCallback *target) {
+static int __redisShiftCallback(redisCallbackList *list, redisCallback *target) {
   redisCallback *cb = list->head;
   if (cb != nullptr) {
     list->head = cb->next;
@@ -303,8 +295,7 @@ static int __redisShiftCallback(redisCallbackList *list,
   return REDIS_ERR;
 }
 
-static void __redisRunCallback(redisAsyncContext *ac, redisCallback *cb,
-                               redisReply *reply) {
+static void __redisRunCallback(redisAsyncContext *ac, redisCallback *cb, redisReply *reply) {
   redisContext *c = &(ac->c);
   if (cb->fn != nullptr) {
     c->flags |= REDIS_IN_CALLBACK;
@@ -543,8 +534,7 @@ oom:
   return REDIS_ERR;
 }
 
-#define redisIsSpontaneousPushReply(r)                                         \
-  (redisIsPushReply(r) && !redisIsSubscribeReply(r))
+#define redisIsSpontaneousPushReply(r) (redisIsPushReply(r) && !redisIsSubscribeReply(r))
 
 static int redisIsSubscribeReply(redisReply *reply) {
   char *str;
@@ -561,8 +551,7 @@ static int redisIsSubscribeReply(redisReply *reply) {
   str = reply->element[0]->str + off;
   len = reply->element[0]->len - off;
 
-  return !strncasecmp(str, "subscribe", len) ||
-         !strncasecmp(str, "message", len) ||
+  return !strncasecmp(str, "subscribe", len) || !strncasecmp(str, "message", len) ||
          !strncasecmp(str, "unsubscribe", len);
 }
 
@@ -575,8 +564,7 @@ void redisProcessCallbacks(redisAsyncContext *ac) {
     if (reply == nullptr) {
       /* When the connection is being disconnected and there are
        * no more replies, this is the cue to really disconnect. */
-      if (c->flags & REDIS_DISCONNECTING && sdslen(c->obuf) == 0 &&
-          ac->replies.head == nullptr) {
+      if (c->flags & REDIS_DISCONNECTING && sdslen(c->obuf) == 0 && ac->replies.head == nullptr) {
         __redisAsyncDisconnect(ac);
         return;
       }
@@ -620,8 +608,7 @@ void redisProcessCallbacks(redisAsyncContext *ac) {
        */
       if (((redisReply *)reply)->type == REDIS_REPLY_ERROR) {
         c->err = REDIS_ERR_OTHER;
-        snprintf(c->errstr, sizeof(c->errstr), "%s",
-                 ((redisReply *)reply)->str);
+        snprintf(c->errstr, sizeof(c->errstr), "%s", ((redisReply *)reply)->str);
         c->reader->fn->freeObject(reply);
         __redisAsyncDisconnect(ac);
         return;
@@ -683,8 +670,7 @@ static int __redisAsyncHandleConnect(redisAsyncContext *ac) {
     return REDIS_ERR;
   } else if (completed == 1) {
     /* connected! */
-    if (c->connection_type == REDIS_CONN_TCP &&
-        redisSetTcpNoDelay(c) == REDIS_ERR) {
+    if (c->connection_type == REDIS_CONN_TCP && redisSetTcpNoDelay(c) == REDIS_ERR) {
       __redisAsyncHandleConnectFailure(ac);
       return REDIS_ERR;
     }
@@ -816,8 +802,7 @@ void redisAsyncHandleTimeout(redisAsyncContext *ac) {
 
 /* Sets a pointer to the first argument and its length starting at p. Returns
  * the number of bytes to skip to get to the following argument. */
-static const char *nextArgument(const char *start, const char **str,
-                                size_t *len) {
+static const char *nextArgument(const char *start, const char **str, size_t *len) {
   const char *p = start;
   if (p[0] != '$') {
     p = strchr(p, '$');
@@ -835,8 +820,8 @@ static const char *nextArgument(const char *start, const char **str,
 /* Helper function for the redisAsyncCommand* family of functions. Writes a
  * formatted command to the output buffer and registers the provided callback
  * function with the context. */
-static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
-                               void *privdata, const char *cmd, size_t len) {
+static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void *privdata,
+                               const char *cmd, size_t len) {
   redisContext *c = &(ac->c);
   redisCallback cb;
   struct dict *cbdict;
@@ -975,8 +960,8 @@ oom:
   return REDIS_ERR;
 }
 
-int redisvAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
-                       void *privdata, const char *format, va_list ap) {
+int redisvAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void *privdata,
+                       const char *format, va_list ap) {
   char *cmd;
   int len;
   int status;
@@ -991,8 +976,8 @@ int redisvAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
   return status;
 }
 
-int redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
-                      void *privdata, const char *format, ...) {
+int redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void *privdata,
+                      const char *format, ...) {
   va_list ap;
   int status;
   va_start(ap, format);
@@ -1001,9 +986,8 @@ int redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn,
   return status;
 }
 
-int redisAsyncCommandArgv(redisAsyncContext *ac, redisCallbackFn *fn,
-                          void *privdata, int argc, const char **argv,
-                          const size_t *argvlen) {
+int redisAsyncCommandArgv(redisAsyncContext *ac, redisCallbackFn *fn, void *privdata, int argc,
+                          const char **argv, const size_t *argvlen) {
   sds cmd;
   long long len;
   int status;
@@ -1015,14 +999,13 @@ int redisAsyncCommandArgv(redisAsyncContext *ac, redisCallbackFn *fn,
   return status;
 }
 
-int redisAsyncFormattedCommand(redisAsyncContext *ac, redisCallbackFn *fn,
-                               void *privdata, const char *cmd, size_t len) {
+int redisAsyncFormattedCommand(redisAsyncContext *ac, redisCallbackFn *fn, void *privdata,
+                               const char *cmd, size_t len) {
   int status = __redisAsyncCommand(ac, fn, privdata, cmd, len);
   return status;
 }
 
-redisAsyncPushFn *redisAsyncSetPushCallback(redisAsyncContext *ac,
-                                            redisAsyncPushFn *fn) {
+redisAsyncPushFn *redisAsyncSetPushCallback(redisAsyncContext *ac, redisAsyncPushFn *fn) {
   redisAsyncPushFn *old = ac->push_cb;
   ac->push_cb = fn;
   return old;
@@ -1038,8 +1021,7 @@ int redisAsyncSetTimeout(redisAsyncContext *ac, struct timeval tv) {
     }
   }
 
-  if (tv.tv_sec != ac->c.command_timeout->tv_sec ||
-      tv.tv_usec != ac->c.command_timeout->tv_usec) {
+  if (tv.tv_sec != ac->c.command_timeout->tv_sec || tv.tv_usec != ac->c.command_timeout->tv_usec) {
     *ac->c.command_timeout = tv;
   }
 

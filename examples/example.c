@@ -29,8 +29,7 @@ static void example_argv_command(redisContext *c, size_t n) {
   /* Execute the command using redisCommandArgv.  We're sending the arguments
    * with two explicit arrays.  One for each argument's string, and the other
    * for its length. */
-  reply =
-      redisCommandArgv(c, n + 2, (const char **)argv, (const size_t *)argvlen);
+  reply = redisCommandArgv(c, n + 2, (const char **)argv, (const size_t *)argvlen);
 
   if (reply == nullptr || c->err) {
     fprintf(stderr, "Error:  Couldn't execute redisCommandArgv\n");

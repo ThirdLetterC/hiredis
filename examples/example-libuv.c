@@ -12,8 +12,7 @@ void debugCallback(redisAsyncContext *c, void *r, void *privdata) {
   if (reply == nullptr) {
     /* The DEBUG SLEEP command will almost always fail, because we have set a 1
      * second timeout */
-    printf("`DEBUG SLEEP` error: %s\n",
-           c->errstr ? c->errstr : "unknown error");
+    printf("`DEBUG SLEEP` error: %s\n", c->errstr ? c->errstr : "unknown error");
     return;
   }
   /* Disconnect after receiving the reply of DEBUG SLEEP (which will not)*/
@@ -73,8 +72,7 @@ int main(int argc, char **argv) {
   which is shown in the `debugCallback`.
   */
 
-  redisAsyncCommand(c, nullptr, nullptr, "SET key %b", argv[argc - 1],
-                    strlen(argv[argc - 1]));
+  redisAsyncCommand(c, nullptr, nullptr, "SET key %b", argv[argc - 1], strlen(argv[argc - 1]));
   redisAsyncCommand(c, getCallback, (char *)"end-1", "GET key");
 
   uv_run(loop, UV_RUN_DEFAULT);

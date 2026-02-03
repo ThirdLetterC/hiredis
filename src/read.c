@@ -108,8 +108,7 @@ static void __redisReaderSetErrorProtocolByte(redisReader *r, char byte) {
   char cbuf[8], sbuf[128];
 
   chrtos(cbuf, sizeof(cbuf), byte);
-  snprintf(sbuf, sizeof(sbuf), "Protocol error, got %s as reply type byte",
-           cbuf);
+  snprintf(sbuf, sizeof(sbuf), "Protocol error, got %s as reply type byte", cbuf);
   __redisReaderSetError(r, REDIS_ERR_PROTOCOL, sbuf);
 }
 
@@ -302,8 +301,7 @@ static int processLineItem(redisReader *r) {
       double d;
 
       if ((size_t)len >= sizeof(buf)) {
-        __redisReaderSetError(r, REDIS_ERR_PROTOCOL,
-                              "Double value is too large");
+        __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Double value is too large");
         return REDIS_ERR;
       }
 
@@ -377,8 +375,7 @@ static int processLineItem(redisReader *r) {
       /* Type will be error or status. */
       for (int i = 0; i < len; i++) {
         if (p[i] == '\r' || p[i] == '\n') {
-          __redisReaderSetError(r, REDIS_ERR_PROTOCOL,
-                                "Bad simple string value");
+          __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Bad simple string value");
           return REDIS_ERR;
         }
       }
@@ -423,8 +420,7 @@ static int processBulkItem(redisReader *r) {
     }
 
     if (len < -1 || (LLONG_MAX > SIZE_MAX && len > (long long)SIZE_MAX)) {
-      __redisReaderSetError(r, REDIS_ERR_PROTOCOL,
-                            "Bulk string length out of range");
+      __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Bulk string length out of range");
       return REDIS_ERR;
     }
 
@@ -520,11 +516,9 @@ static int processAggregateItem(redisReader *r) {
 
     root = (r->ridx == 0);
 
-    if (elements < -1 ||
-        (LLONG_MAX > SIZE_MAX && elements > (long long)SIZE_MAX) ||
+    if (elements < -1 || (LLONG_MAX > SIZE_MAX && elements > (long long)SIZE_MAX) ||
         (r->maxelements > 0 && elements > r->maxelements)) {
-      __redisReaderSetError(r, REDIS_ERR_PROTOCOL,
-                            "Multi-bulk length out of range");
+      __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Multi-bulk length out of range");
       return REDIS_ERR;
     }
 

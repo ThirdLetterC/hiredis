@@ -84,7 +84,7 @@ struct __attribute__((__packed__)) sdshdr64 {
 [[maybe_unused]] static constexpr unsigned char SDS_TYPE_64 = 4;
 [[maybe_unused]] static constexpr unsigned char SDS_TYPE_MASK = 0b0000'0111;
 [[maybe_unused]] static constexpr unsigned char SDS_TYPE_BITS = 3;
-#define SDS_HDR_VAR(T, s)                                                      \
+#define SDS_HDR_VAR(T, s)                                                                          \
   struct sdshdr##T *sh = (struct sdshdr##T *)((s) - (sizeof(struct sdshdr##T)));
 #define SDS_HDR(T, s) ((struct sdshdr##T *)((s) - (sizeof(struct sdshdr##T))))
 #define SDS_TYPE_5_LEN(f) ((f) >> SDS_TYPE_BITS)
@@ -230,8 +230,7 @@ void sdsfree(sds s);
 
 [[nodiscard]] sds sdscatvprintf(sds s, const char *fmt, va_list ap);
 #ifdef __GNUC__
-[[nodiscard]] sds sdscatprintf(sds s, const char *fmt, ...)
-    __attribute__((format(printf, 2, 3)));
+[[nodiscard]] sds sdscatprintf(sds s, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 #else
 [[nodiscard]] sds sdscatprintf(sds s, const char *fmt, ...);
 #endif
@@ -242,19 +241,16 @@ int sdsrange(sds s, ssize_t start, ssize_t end);
 void sdsupdatelen(sds s);
 void sdsclear(sds s);
 int sdscmp(const sds s1, const sds s2);
-[[nodiscard]] sds *sdssplitlen(const char *s, int len, const char *sep,
-                               int seplen, int *count);
+[[nodiscard]] sds *sdssplitlen(const char *s, int len, const char *sep, int seplen, int *count);
 void sdsfreesplitres(sds *tokens, int count);
 void sdstolower(sds s);
 void sdstoupper(sds s);
 [[nodiscard]] sds sdsfromlonglong(long long value);
 [[nodiscard]] sds sdscatrepr(sds s, const char *p, size_t len);
 [[nodiscard]] sds *sdssplitargs(const char *line, int *argc);
-[[nodiscard]] sds sdsmapchars(sds s, const char *from, const char *to,
-                              size_t setlen);
+[[nodiscard]] sds sdsmapchars(sds s, const char *from, const char *to, size_t setlen);
 [[nodiscard]] sds sdsjoin(char **argv, int argc, char *sep);
-[[nodiscard]] sds sdsjoinsds(sds *argv, int argc, const char *sep,
-                             size_t seplen);
+[[nodiscard]] sds sdsjoinsds(sds *argv, int argc, const char *sep, size_t seplen);
 
 /* Low level functions exposed to the user API */
 [[nodiscard]] sds sdsMakeRoomFor(sds s, size_t addlen);

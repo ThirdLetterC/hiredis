@@ -73,7 +73,9 @@ extern hiredisAllocFuncs hiredisAllocFns;
   return hiredisAllocFns.strdupFn(str);
 }
 
-static inline void hi_free(void *ptr) { hiredisAllocFns.freeFn(ptr); }
+static inline void hi_free(void *ptr) {
+  hiredisAllocFns.freeFn(ptr);
+}
 
 #ifdef __cplusplus
 }
