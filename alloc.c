@@ -28,10 +28,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "fmacros.h"
 #include "alloc.h"
-#include <string.h>
+#include "fmacros.h"
 #include <stdlib.h>
+#include <string.h>
 
 hiredisAllocFuncs hiredisAllocFns = {
     .mallocFn = malloc,
@@ -43,20 +43,20 @@ hiredisAllocFuncs hiredisAllocFns = {
 
 /* Override hiredis' allocators with ones supplied by the user */
 hiredisAllocFuncs hiredisSetAllocators(hiredisAllocFuncs *override) {
-    hiredisAllocFuncs orig = hiredisAllocFns;
+  hiredisAllocFuncs orig = hiredisAllocFns;
 
-    hiredisAllocFns = *override;
+  hiredisAllocFns = *override;
 
-    return orig;
+  return orig;
 }
 
 /* Reset allocators to use libc defaults */
 void hiredisResetAllocators(void) {
-    hiredisAllocFns = (hiredisAllocFuncs) {
-        .mallocFn = malloc,
-        .callocFn = calloc,
-        .reallocFn = realloc,
-        .strdupFn = strdup,
-        .freeFn = free,
-    };
+  hiredisAllocFns = (hiredisAllocFuncs){
+      .mallocFn = malloc,
+      .callocFn = calloc,
+      .reallocFn = realloc,
+      .strdupFn = strdup,
+      .freeFn = free,
+  };
 }
