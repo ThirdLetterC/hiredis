@@ -6,6 +6,7 @@
 #include "../sockcompat.h"
 #include <string.h> // for memset
 #include <errno.h>
+#include <sys/time.h>
 
 /* Values to return from redisPollTick */
 #define REDIS_POLL_HANDLED_READ    1
@@ -32,18 +33,9 @@ static double redisPollTimevalToDouble(struct timeval *tv) {
 }
 
 static double redisPollGetNow(void) {
-#ifndef _MSC_VER
     struct timeval tv;
     gettimeofday(&tv,NULL);
     return redisPollTimevalToDouble(&tv);
-#else
-    FILETIME ft;
-    ULARGE_INTEGER li;
-    GetSystemTimeAsFileTime(&ft);
-    li.HighPart = ft.dwHighDateTime;
-    li.LowPart = ft.dwLowDateTime;
-    return (double)li.QuadPart * 1e-7;
-#endif
 }
 
 /* Poll for io, handling any pending callbacks.  The timeout argument can be
@@ -94,8 +86,7 @@ static int redisPollTick(redisAsyncContext *ac, double timeout) {
             redisAsyncHandleRead(ac);
             handled |= REDIS_POLL_HANDLED_READ;
         }
-        /* on Windows, connection failure is indicated with the Exception fdset.
-         * handle it the same as writable. */
+        /* Connection failure is indicated with an error event, handle it like writable. */
         if (writing && (pfd.revents & (POLLOUT | POLLERR))) {
             /* context Read callback may have caused context to be deleted, e.g.
                by doing an redisAsyncDisconnect() */

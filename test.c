@@ -3,10 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef _WIN32
 #include <strings.h>
 #include <sys/time.h>
-#endif
+#include <unistd.h>
 #include <assert.h>
 #include <signal.h>
 #include <errno.h>
@@ -24,7 +23,6 @@
 #include <event2/event.h>
 #endif
 #include "net.h"
-#include "win32.h"
 
 enum connection_type {
     CONN_TCP,
@@ -78,23 +76,13 @@ static int tests = 0, fails = 0, skips = 0;
 
 static void millisleep(int ms)
 {
-#ifdef _MSC_VER
-    Sleep(ms);
-#else
     usleep(ms*1000);
-#endif
 }
 
 static long long usec(void) {
-#ifndef _MSC_VER
     struct timeval tv;
     gettimeofday(&tv,NULL);
     return (((long long)tv.tv_sec)*1000000)+tv.tv_usec;
-#else
-    FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);
-    return (((long long)ft.dwHighDateTime << 32) | ft.dwLowDateTime) / 10;
-#endif
 }
 
 /* The assert() calls below have side effects, so we need assert()
@@ -963,7 +951,6 @@ static void test_blocking_connection_errors(void) {
         freeaddrinfo(ai_tmp);
     }
 
-#ifndef _WIN32
     redisOptions opt = {0};
     struct timeval tv;
 
@@ -988,7 +975,6 @@ static void test_blocking_connection_errors(void) {
     c = redisConnectUnix((char*)"/tmp/idontexist.sock");
     test_cond(c->err == REDIS_ERR_IO); /* Don't care about the message... */
     redisFree(c);
-#endif
 }
 
 /* Test push handler */
@@ -1302,13 +1288,8 @@ static void test_blocking_connection_timeouts(struct config config) {
 
         redisSetTimeout(c, tv);
         reply = redisCommand(c, "GET foo");
-#ifndef _WIN32
         test_cond(s > 0 && reply == NULL && c->err == REDIS_ERR_IO &&
                   strcmp(c->errstr, "Resource temporarily unavailable") == 0);
-#else
-        test_cond(s > 0 && reply == NULL && c->err == REDIS_ERR_TIMEOUT &&
-                  strcmp(c->errstr, "recv timeout") == 0);
-#endif
         freeReplyObject(reply);
 
         // wait for the DEBUG SLEEP to complete so that Redis server is unblocked for the following tests
@@ -1356,7 +1337,6 @@ static void test_blocking_io_errors(struct config config) {
         test_cond(reply == NULL);
     }
 
-#ifndef _WIN32
     /* On 2.0, QUIT will cause the connection to be closed immediately and
      * the read(2) for the reply on QUIT will set the error to EOF.
      * On >2.0, QUIT will return with OK and another read(2) needed to be
@@ -1364,7 +1344,6 @@ static void test_blocking_io_errors(struct config config) {
      * conditions, the error will be set to EOF. */
     assert(c->err == REDIS_ERR_EOF &&
         strcmp(c->errstr,"Server closed the connection") == 0);
-#endif
     redisFree(c);
 
     c = do_connect(config);
@@ -1372,11 +1351,7 @@ static void test_blocking_io_errors(struct config config) {
     struct timeval tv = { 0, 1000 };
     assert(redisSetTimeout(c,tv) == REDIS_OK);
     int respcode = redisGetReply(c,&_reply);
-#ifndef _WIN32
     test_cond(respcode == REDIS_ERR && c->err == REDIS_ERR_IO && errno == EAGAIN);
-#else
-    test_cond(respcode == REDIS_ERR && c->err == REDIS_ERR_TIMEOUT);
-#endif
     redisFree(c);
 }
 
@@ -2361,16 +2336,10 @@ int main(int argc, char **argv) {
         argv++; argc--;
     }
 
-#ifndef _WIN32
     /* Ignore broken pipe signal (for I/O error tests). */
     signal(SIGPIPE, SIG_IGN);
 
     test_unix_socket = access(cfg.unix_sock.path, F_OK) == 0;
-
-#else
-    /* Unix sockets don't exist in Windows */
-    test_unix_socket = 0;
-#endif
 
     test_allocator_injection();
 

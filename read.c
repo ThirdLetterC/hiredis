@@ -32,10 +32,8 @@
 #include "fmacros.h"
 #include <string.h>
 #include <stdlib.h>
-#ifndef _MSC_VER
 #include <unistd.h>
 #include <strings.h>
-#endif
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
@@ -45,7 +43,6 @@
 #include "alloc.h"
 #include "read.h"
 #include "sds.h"
-#include "win32.h"
 
 /* Initial size of our nested reply stack and how much we grow it when needd */
 #define REDIS_READER_STACK_SIZE 9

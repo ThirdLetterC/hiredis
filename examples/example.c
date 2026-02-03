@@ -3,10 +3,6 @@
 #include <string.h>
 #include <hiredis.h>
 
-#ifdef _MSC_VER
-#include <winsock2.h> /* For struct timeval */
-#endif
-
 static void example_argv_command(redisContext *c, size_t n) {
     char **argv, tmp[42];
     size_t *argvlen;

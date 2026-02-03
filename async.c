@@ -33,9 +33,7 @@
 #include "alloc.h"
 #include <stdlib.h>
 #include <string.h>
-#ifndef _MSC_VER
 #include <strings.h>
-#endif
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -43,7 +41,6 @@
 #include "net.h"
 #include "dict.c"
 #include "sds.h"
-#include "win32.h"
 
 #include "async_private.h"
 

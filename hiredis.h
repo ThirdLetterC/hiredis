@@ -35,12 +35,8 @@
 #define __HIREDIS_H
 #include "read.h"
 #include <stdarg.h> /* for va_list */
-#ifndef _MSC_VER
+#include <sys/types.h> /* for ssize_t */
 #include <sys/time.h> /* for struct timeval */
-#else
-struct timeval; /* forward declaration */
-typedef intptr_t ssize_t;
-#endif
 #include <stdint.h> /* uintXX_t, etc */
 #include "sds.h" /* for sds */
 #include "alloc.h" /* for allocation wrappers */
@@ -168,20 +164,9 @@ struct redisSsl;
 #define REDIS_OPT_SET_SOCK_CLOEXEC 0x80  /* Set SOCK_CLOEXEC on socket file descriptor. */
 
 /* In Unix systems a file descriptor is a regular signed int, with -1
- * representing an invalid descriptor. In Windows it is a SOCKET
- * (32- or 64-bit unsigned integer depending on the architecture), where
- * all bits set (~0) is INVALID_SOCKET.  */
-#ifndef _WIN32
+ * representing an invalid descriptor. */
 typedef int redisFD;
 #define REDIS_INVALID_FD -1
-#else
-#ifdef _WIN64
-typedef unsigned long long redisFD; /* SOCKET = 64-bit UINT_PTR */
-#else
-typedef unsigned long redisFD;      /* SOCKET = 32-bit UINT_PTR */
-#endif
-#define REDIS_INVALID_FD ((redisFD)(~0)) /* INVALID_SOCKET */
-#endif
 
 typedef struct {
     /*

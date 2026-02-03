@@ -34,13 +34,6 @@
 #define __SDS_H
 
 #define SDS_MAX_PREALLOC (1024*1024)
-#ifdef _MSC_VER
-typedef intptr_t ssize_t;
-#define SSIZE_MAX INTPTR_MAX
-#ifndef __clang__
-#define __attribute__(x)
-#endif
-#endif
 
 #include <sys/types.h>
 #include <stdarg.h>

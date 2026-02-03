@@ -40,22 +40,8 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
-#ifdef _WIN32
-#include <windows.h>
-#include <wincrypt.h>
-#ifdef OPENSSL_IS_BORINGSSL
-#undef X509_NAME
-#undef X509_EXTENSIONS
-#undef PKCS7_ISSUER_AND_SERIAL
-#undef PKCS7_SIGNER_INFO
-#undef OCSP_REQUEST
-#undef OCSP_RESPONSE
-#endif
-#else
 #include <pthread.h>
-#endif
 
-#include "win32.h"
 #include "async_private.h"
 #include "hiredis_ssl.h"
 
@@ -107,18 +93,6 @@ redisContextFuncs redisContextSSLFuncs;
 #endif
 
 #ifdef HIREDIS_USE_CRYPTO_LOCKS
-#ifdef _WIN32
-typedef CRITICAL_SECTION sslLockType;
-static void sslLockInit(sslLockType* l) {
-    InitializeCriticalSection(l);
-}
-static void sslLockAcquire(sslLockType* l) {
-    EnterCriticalSection(l);
-}
-static void sslLockRelease(sslLockType* l) {
-    LeaveCriticalSection(l);
-}
-#else
 typedef pthread_mutex_t sslLockType;
 static void sslLockInit(sslLockType *l) {
     pthread_mutex_init(l, NULL);
@@ -129,7 +103,6 @@ static void sslLockAcquire(sslLockType *l) {
 static void sslLockRelease(sslLockType *l) {
     pthread_mutex_unlock(l);
 }
-#endif
 
 static sslLockType* ossl_locks;
 
@@ -249,11 +222,6 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options, redi
     const char *private_key_filename = options->private_key_filename;
     const char *server_name = options->server_name;
 
-#ifdef _WIN32
-    HCERTSTORE win_store = NULL;
-    PCCERT_CONTEXT win_ctx = NULL;
-#endif
-
     redisSSLContext *ctx = hi_calloc(1, sizeof(redisSSLContext));
     if (ctx == NULL)
         goto error;
@@ -286,31 +254,6 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options, redi
     }
 
     if (capath || cacert_filename) {
-#ifdef _WIN32
-        if (0 == strcmp(cacert_filename, "wincert")) {
-            win_store = CertOpenSystemStore(NULL, "Root");
-            if (!win_store) {
-                if (error) *error = REDIS_SSL_CTX_OS_CERTSTORE_OPEN_FAILED;
-                goto error;
-            }
-            X509_STORE* store = SSL_CTX_get_cert_store(ctx->ssl_ctx);
-            while (win_ctx = CertEnumCertificatesInStore(win_store, win_ctx)) {
-                X509* x509 = NULL;
-                x509 = d2i_X509(NULL, (const unsigned char**)&win_ctx->pbCertEncoded, win_ctx->cbCertEncoded);
-                if (x509) {
-                    if ((1 != X509_STORE_add_cert(store, x509)) ||
-                        (1 != SSL_CTX_add_client_CA(ctx->ssl_ctx, x509)))
-                    {
-                        if (error) *error = REDIS_SSL_CTX_OS_CERT_ADD_FAILED;
-                        goto error;
-                    }
-                    X509_free(x509);
-                }
-            }
-            CertFreeCertificateContext(win_ctx);
-            CertCloseStore(win_store, 0);
-        } else
-#endif
         if (!SSL_CTX_load_verify_locations(ctx->ssl_ctx, cacert_filename, capath)) {
             if (error) *error = REDIS_SSL_CTX_CA_CERT_LOAD_FAILED;
             goto error;
@@ -339,10 +282,6 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options, redi
     return ctx;
 
 error:
-#ifdef _WIN32
-    CertFreeCertificateContext(win_ctx);
-    CertCloseStore(win_store, 0);
-#endif
     redisFreeSSLContext(ctx);
     return NULL;
 }
@@ -617,4 +556,3 @@ redisContextFuncs redisContextSSLFuncs = {
     .read = redisSSLRead,
     .write = redisSSLWrite
 };
-

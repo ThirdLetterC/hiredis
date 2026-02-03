@@ -16,6 +16,11 @@ MESSAGE("Detected version: ${VERSION}")
 
 PROJECT(hiredis LANGUAGES "C" VERSION "${VERSION}")
 
+# Windows builds are not supported.
+if (WIN32)
+    message(FATAL_ERROR "Windows is not supported.")
+endif()
+
 #Built as a subproject or if it is the main project
 set(MAIN_PROJECT OFF)
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -30,9 +35,6 @@ OPTION(DISABLE_TESTS "If tests should be compiled or not" OFF)
 OPTION(ENABLE_SSL_TESTS "Should we test SSL connections" OFF)
 OPTION(ENABLE_EXAMPLES "Enable building hiredis examples" OFF)
 OPTION(ENABLE_ASYNC_TESTS "Should we run all asynchronous API tests" OFF)
-# Historically, the NuGet file was always install; default
-# to ON for those who rely on that historical behaviour.
-OPTION(ENABLE_NUGET "Install NuGET packaging details" ON)
 
 # Hiredis requires C99
 SET(CMAKE_C_STANDARD 99)
@@ -44,14 +46,9 @@ SET(hiredis_sources
     hiredis.c
     net.c
     read.c
-    sds.c
-    sockcompat.c)
+    sds.c)
 
 SET(hiredis_sources ${hiredis_sources})
-
-IF(WIN32)
-    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -DWIN32_LEAN_AND_MEAN)
-ENDIF()
 
 ADD_LIBRARY(hiredis ${hiredis_sources})
 ADD_LIBRARY(hiredis::hiredis ALIAS hiredis)
@@ -59,16 +56,9 @@ set(hiredis_export_name hiredis CACHE STRING "Name of the exported target")
 set_target_properties(hiredis PROPERTIES EXPORT_NAME ${hiredis_export_name})
 
 SET_TARGET_PROPERTIES(hiredis
-    PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE
     VERSION "${VERSION}"
     SOVERSION "${HIREDIS_MAJOR}")
-IF(MSVC)
-    SET_TARGET_PROPERTIES(hiredis
-        PROPERTIES COMPILE_FLAGS /Z7)
-ENDIF()
-IF(WIN32)
-    TARGET_LINK_LIBRARIES(hiredis PUBLIC ws2_32 crypt32)
-ELSEIF(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+IF(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     TARGET_LINK_LIBRARIES(hiredis PUBLIC m)
 ELSEIF(CMAKE_SYSTEM_NAME MATCHES "SunOS")
     TARGET_LINK_LIBRARIES(hiredis PUBLIC socket)
@@ -114,17 +104,6 @@ INSTALL(TARGETS hiredis
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-if (MSVC AND BUILD_SHARED_LIBS)
-    INSTALL(FILES $<TARGET_PDB_FILE:hiredis>
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
-        CONFIGURATIONS Debug RelWithDebInfo)
-endif()
-
-if (ENABLE_NUGET)
-    # For NuGet packages
-    INSTALL(FILES hiredis.targets
-        DESTINATION build/native)
-endif()
 
 INSTALL(FILES hiredis.h read.h sds.h async.h alloc.h sockcompat.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hiredis)
@@ -139,11 +118,7 @@ export(EXPORT hiredis-targets
     FILE "${CMAKE_CURRENT_BINARY_DIR}/hiredis-targets.cmake"
     NAMESPACE hiredis::)
 
-if(WIN32)
-    SET(CMAKE_CONF_INSTALL_DIR share/hiredis)
-else()
-    SET(CMAKE_CONF_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/hiredis)
-endif()
+SET(CMAKE_CONF_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/hiredis)
 SET(INCLUDE_INSTALL_DIR include)
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/hiredis-config-version.cmake"
@@ -180,17 +155,9 @@ IF(ENABLE_SSL)
 
     SET_TARGET_PROPERTIES(hiredis_ssl
         PROPERTIES
-        WINDOWS_EXPORT_ALL_SYMBOLS TRUE
         VERSION "${VERSION}"
         SOVERSION "${HIREDIS_MAJOR}")
-    IF(MSVC)
-        SET_TARGET_PROPERTIES(hiredis_ssl
-            PROPERTIES COMPILE_FLAGS /Z7)
-    ENDIF()
     TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE OpenSSL::SSL)
-    IF(WIN32)
-        TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE hiredis)
-    ENDIF()
     CONFIGURE_FILE(hiredis_ssl.pc.in hiredis_ssl.pc @ONLY)
 
     INSTALL(TARGETS hiredis_ssl
@@ -199,11 +166,6 @@ IF(ENABLE_SSL)
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-    if (MSVC AND BUILD_SHARED_LIBS)
-        INSTALL(FILES $<TARGET_PDB_FILE:hiredis_ssl>
-            DESTINATION ${CMAKE_INSTALL_BINDIR}
-            CONFIGURATIONS Debug RelWithDebInfo)
-    endif()
 
     INSTALL(FILES hiredis_ssl.h
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hiredis)
@@ -215,11 +177,7 @@ IF(ENABLE_SSL)
            FILE "${CMAKE_CURRENT_BINARY_DIR}/hiredis_ssl-targets.cmake"
            NAMESPACE hiredis::)
 
-    if(WIN32)
-        SET(CMAKE_CONF_INSTALL_DIR share/hiredis_ssl)
-    else()
-        SET(CMAKE_CONF_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/hiredis_ssl)
-    endif()
+    SET(CMAKE_CONF_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/hiredis_ssl)
     configure_package_config_file(hiredis_ssl-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/hiredis_ssl-config.cmake
                                   INSTALL_DESTINATION ${CMAKE_CONF_INSTALL_DIR}
                                   PATH_VARS INCLUDE_INSTALL_DIR)

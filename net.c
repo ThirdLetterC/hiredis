@@ -46,7 +46,6 @@
 #include "net.h"
 #include "sds.h"
 #include "sockcompat.h"
-#include "win32.h"
 
 /* Defined in hiredis.c */
 void __redisSetError(redisContext *c, int type, const char *str);
@@ -67,7 +66,6 @@ ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap) {
             /* Try again later */
             return 0;
         } else if(errno == ETIMEDOUT && (c->flags & REDIS_BLOCK)) {
-            /* especially in windows */
             __redisSetError(c, REDIS_ERR_TIMEOUT, "recv timeout");
             return -1;
         } else {
@@ -145,7 +143,6 @@ static int redisCreateSocket(redisContext *c, int type) {
 }
 
 static int redisSetBlocking(redisContext *c, int blocking) {
-#ifndef _WIN32
     int flags;
 
     /* Set the socket nonblocking.
@@ -167,14 +164,6 @@ static int redisSetBlocking(redisContext *c, int blocking) {
         redisNetClose(c);
         return REDIS_ERR;
     }
-#else
-    u_long mode = blocking ? 0 : 1;
-    if (ioctl(c->fd, FIONBIO, &mode) == -1) {
-        __redisSetErrorFromErrno(c, REDIS_ERR_IO, "ioctl(FIONBIO)");
-        redisNetClose(c);
-        return REDIS_ERR;
-    }
-#endif /* _WIN32 */
     return REDIS_OK;
 }
 
@@ -186,7 +175,6 @@ int redisKeepAlive(redisContext *c, int interval) {
     if (c->connection_type == REDIS_CONN_UNIX)
         return REDIS_ERR;
 
-#ifndef _WIN32
     if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val)) == -1){
         __redisSetError(c,REDIS_ERR_OTHER,strerror(errno));
         return REDIS_ERR;
@@ -219,15 +207,6 @@ int redisKeepAlive(redisContext *c, int interval) {
         return REDIS_ERR;
     }
 #endif
-#endif
-#else
-    int res;
-
-    res = win32_redisKeepAlive(fd, interval * 1000);
-    if (res != 0) {
-        __redisSetError(c, REDIS_ERR_OTHER, strerror(res));
-        return REDIS_ERR;
-    }
 #endif
     return REDIS_OK;
 }
@@ -286,15 +265,9 @@ static int redisContextTimeoutMsec(redisContext *c, long *result)
 }
 
 static long redisPollMillis(void) {
-#ifndef _MSC_VER
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     return (now.tv_sec * 1000) + now.tv_nsec / 1000000;
-#else
-    FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);
-    return (((long long)ft.dwHighDateTime << 32) | ft.dwLowDateTime) / 10;
-#endif
 }
 
 static int redisContextWaitReady(redisContext *c, long msec) {
@@ -646,7 +619,6 @@ int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
 }
 
 int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout) {
-#ifndef _WIN32
     int blocking = (c->flags & REDIS_BLOCK);
     struct sockaddr_un *sa;
     long timeout_msec = -1;
@@ -701,12 +673,6 @@ int redisContextConnectUnix(redisContext *c, const char *path, const struct time
 
     c->flags |= REDIS_CONNECTED;
     return REDIS_OK;
-#else
-    /* We currently do not support Unix sockets for Windows. */
-    /* TODO(m): https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows/ */
-    errno = EPROTONOSUPPORT;
-    return REDIS_ERR;
-#endif /* _WIN32 */
 oom:
     __redisSetError(c, REDIS_ERR_OOM, "Out of memory");
     return REDIS_ERR;
