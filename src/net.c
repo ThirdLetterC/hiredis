@@ -252,16 +252,21 @@ static constexpr long MAX_MSEC = (LONG_MAX - 999L) / 1'000L;
 static int redisContextTimeoutMsec(redisContext *c, long *result) {
   const struct timeval *timeout = c->connect_timeout;
   long msec = -1;
+  constexpr long microseconds_per_second = 1'000'000;
+  constexpr long milliseconds_per_second = 1'000;
+  constexpr long microseconds_per_millisecond = 1'000;
+  constexpr long round_up_usec = 999;
 
   /* Only use timeout when not nullptr. */
   if (timeout != nullptr) {
-    if (timeout->tv_usec > 1'000'000 || timeout->tv_sec > MAX_MSEC) {
+    if (timeout->tv_usec > microseconds_per_second || timeout->tv_sec > MAX_MSEC) {
       __redisSetError(c, REDIS_ERR_IO, "Invalid timeout specified");
       *result = msec;
       return REDIS_ERR;
     }
 
-    msec = (timeout->tv_sec * 1'000) + ((timeout->tv_usec + 999) / 1'000);
+    msec = (timeout->tv_sec * milliseconds_per_second) +
+           ((timeout->tv_usec + round_up_usec) / microseconds_per_millisecond);
 
     if (msec < 0 || msec > INT_MAX) {
       msec = INT_MAX;
@@ -275,7 +280,9 @@ static int redisContextTimeoutMsec(redisContext *c, long *result) {
 static long redisPollMillis() {
   struct timespec now;
   clock_gettime(CLOCK_MONOTONIC, &now);
-  return (now.tv_sec * 1'000) + now.tv_nsec / 1'000'000;
+  constexpr long milliseconds_per_second = 1'000;
+  constexpr long nanoseconds_per_millisecond = 1'000'000;
+  return (now.tv_sec * milliseconds_per_second) + now.tv_nsec / nanoseconds_per_millisecond;
 }
 
 static int redisContextWaitReady(redisContext *c, long msec) {
