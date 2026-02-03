@@ -33,11 +33,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dict.h"
-#include "alloc.h"
 #include <assert.h>
 #include <limits.h>
-#include <stdlib.h>
+
+#include "dict.h"
+#include "alloc.h"
 
 /* -------------------------- private prototypes ---------------------------- */
 

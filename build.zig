@@ -4,10 +4,13 @@ const base_sources = [_][]const u8{
     "src/alloc.c",
     "src/async.c",
     "src/dict.c",
-    "src/hiredis.c",
-    "src/net.c",
     "src/read.c",
     "src/sds.c",
+};
+
+const fmacros_sources = [_][]const u8{
+    "src/hiredis.c",
+    "src/net.c",
 };
 
 const common_cflags = [_][]const u8{
@@ -33,6 +36,15 @@ const common_cflags_pic = [_][]const u8{
     "-fPIC",
 };
 
+const posix_feature_cflags = [_][]const u8{
+    "-D_XOPEN_SOURCE=600",
+    "-D_POSIX_C_SOURCE=200112L",
+};
+
+const darwin_feature_cflags = [_][]const u8{
+    "-D_DARWIN_C_SOURCE",
+};
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -43,7 +55,18 @@ pub fn build(b: *std.Build) void {
     const build_shared = b.option(bool, "shared", "Build shared library") orelse true;
     const build_static = b.option(bool, "static", "Build static library") orelse true;
 
-    const cflags = if (target.result.os.tag == .windows) &common_cflags else &common_cflags_pic;
+    const os_tag = target.result.os.tag;
+    const base_cflags = if (os_tag == .windows) &common_cflags else &common_cflags_pic;
+
+    var fmacros_cflags_list = std.ArrayList([]const u8).init(b.allocator);
+    fmacros_cflags_list.appendSlice(base_cflags) catch @panic("OOM");
+    if (os_tag != .aix) {
+        fmacros_cflags_list.appendSlice(&posix_feature_cflags) catch @panic("OOM");
+    }
+    if (os_tag.isDarwin()) {
+        fmacros_cflags_list.appendSlice(&darwin_feature_cflags) catch @panic("OOM");
+    }
+    const fmacros_cflags = fmacros_cflags_list.items;
 
     var static_lib: ?*std.Build.Step.Compile = null;
     var shared_lib: ?*std.Build.Step.Compile = null;
@@ -53,13 +76,13 @@ pub fn build(b: *std.Build) void {
     }
 
     if (build_static) {
-        const lib = addHiredisLibrary(b, "hiredis", target, optimize, false, enable_ssl, cflags);
+        const lib = addHiredisLibrary(b, "hiredis", target, optimize, false, enable_ssl, base_cflags, fmacros_cflags);
         b.installArtifact(lib);
         static_lib = lib;
     }
 
     if (build_shared) {
-        const lib = addHiredisLibrary(b, "hiredis", target, optimize, true, enable_ssl, cflags);
+        const lib = addHiredisLibrary(b, "hiredis", target, optimize, true, enable_ssl, base_cflags, fmacros_cflags);
         b.installArtifact(lib);
         shared_lib = lib;
     }
@@ -79,21 +102,21 @@ pub fn build(b: *std.Build) void {
     const link_lib = static_lib orelse shared_lib.?;
 
     {
-        const exe = addExample(b, "example", "examples/example.c", target, optimize, link_lib, cflags, false, false);
+        const exe = addExample(b, "example", "examples/example.c", target, optimize, link_lib, base_cflags, false, false);
         examples_step.dependOn(&exe.step);
         if (enable_examples) {
             b.installArtifact(exe);
         }
     }
     {
-        const exe = addExample(b, "example-push", "examples/example-push.c", target, optimize, link_lib, cflags, false, false);
+        const exe = addExample(b, "example-push", "examples/example-push.c", target, optimize, link_lib, base_cflags, false, false);
         examples_step.dependOn(&exe.step);
         if (enable_examples) {
             b.installArtifact(exe);
         }
     }
     {
-        const exe = addExample(b, "example-poll", "examples/example-poll.c", target, optimize, link_lib, cflags, false, false);
+        const exe = addExample(b, "example-poll", "examples/example-poll.c", target, optimize, link_lib, base_cflags, false, false);
         examples_step.dependOn(&exe.step);
         if (enable_examples) {
             b.installArtifact(exe);
@@ -101,7 +124,7 @@ pub fn build(b: *std.Build) void {
     }
 
     if (enable_ssl) {
-        const exe = addExample(b, "example-ssl", "examples/example-ssl.c", target, optimize, link_lib, cflags, true, false);
+        const exe = addExample(b, "example-ssl", "examples/example-ssl.c", target, optimize, link_lib, base_cflags, true, false);
         examples_step.dependOn(&exe.step);
         if (enable_examples) {
             b.installArtifact(exe);
@@ -109,7 +132,7 @@ pub fn build(b: *std.Build) void {
     }
 
     if (enable_libuv) {
-        const exe = addExample(b, "example-libuv", "examples/example-libuv.c", target, optimize, link_lib, cflags, false, true);
+        const exe = addExample(b, "example-libuv", "examples/example-libuv.c", target, optimize, link_lib, base_cflags, false, true);
         examples_step.dependOn(&exe.step);
         if (enable_examples) {
             b.installArtifact(exe);
@@ -124,7 +147,8 @@ fn addHiredisLibrary(
     optimize: std.builtin.OptimizeMode,
     shared: bool,
     enable_ssl: bool,
-    cflags: []const []const u8,
+    base_cflags: []const []const u8,
+    fmacros_cflags: []const []const u8,
 ) *std.Build.Step.Compile {
     const module = b.createModule(.{
         .target = target,
@@ -133,10 +157,11 @@ fn addHiredisLibrary(
     });
     module.addIncludePath(b.path("."));
     module.addIncludePath(b.path("src/include"));
-    module.addCSourceFiles(.{ .files = &base_sources, .flags = cflags });
+    module.addCSourceFiles(.{ .files = &base_sources, .flags = base_cflags });
+    module.addCSourceFiles(.{ .files = &fmacros_sources, .flags = fmacros_cflags });
 
     if (enable_ssl) {
-        module.addCSourceFiles(.{ .files = &[_][]const u8{"src/ssl.c"}, .flags = cflags });
+        module.addCSourceFiles(.{ .files = &[_][]const u8{"src/ssl.c"}, .flags = base_cflags });
     }
 
     const lib = b.addLibrary(.{

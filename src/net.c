@@ -32,8 +32,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "fmacros.h"
-
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>

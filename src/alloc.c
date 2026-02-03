@@ -28,10 +28,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "alloc.h"
-
 #include <stdlib.h>
 #include <string.h>
+
+#include "alloc.h"
 
 hiredisAllocFuncs hiredisAllocFns = {
     .mallocFn = malloc,

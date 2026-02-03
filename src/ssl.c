@@ -30,11 +30,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "alloc.h"
-#include "async.h"
-#include "hiredis.h"
-#include "net.h"
-
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
@@ -42,6 +37,11 @@
 #include <errno.h>
 #include <pthread.h>
 #include <string.h>
+
+#include "alloc.h"
+#include "async.h"
+#include "hiredis.h"
+#include "net.h"
 
 #include "async_private.h"
 #include "hiredis_ssl.h"

@@ -29,12 +29,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "async.h"
-#include "alloc.h"
-#include "dict.c"
-#include "net.h"
-#include "sds.h"
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -42,6 +36,11 @@
 #include <string.h>
 #include <strings.h>
 
+#include "async.h"
+#include "alloc.h"
+#include "dict.c"
+#include "net.h"
+#include "sds.h"
 #include "async_private.h"
 
 #ifdef NDEBUG

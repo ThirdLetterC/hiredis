@@ -31,8 +31,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "fmacros.h"
-
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>

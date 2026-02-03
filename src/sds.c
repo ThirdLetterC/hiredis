@@ -30,9 +30,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "sds.h"
-#include "sdsalloc.h"
-
 #include <assert.h>
 #include <bits/posix1_lim.h>
 #include <ctype.h>
@@ -40,6 +37,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "sds.h"
+#include "sdsalloc.h"
 
 static inline int sdsHdrSize(char type) {
   switch (type & SDS_TYPE_MASK) {
