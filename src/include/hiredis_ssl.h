@@ -142,7 +142,7 @@ int redisInitOpenSSL();
  * If error is non-null, it will be populated in case the context creation fails
  * (returning a nullptr).
  */
-[[nodiscard]] redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
+[[nodiscard]] redisSSLContext *redisCreateSSLContextWithOptions(const redisSSLOptions *options,
                                                                 redisSSLContextError *error);
 
 /**

@@ -47,7 +47,7 @@
 static constexpr int REDIS_READER_STACK_SIZE = 9;
 
 static void __redisReaderSetError(redisReader *r, int type, const char *str) {
-  size_t len;
+  auto len = strlen(str);
 
   if (r->reply != nullptr && r->fn && r->fn->freeObject) {
     r->fn->freeObject(r->reply);
@@ -64,7 +64,6 @@ static void __redisReaderSetError(redisReader *r, int type, const char *str) {
 
   /* Set error. */
   r->err = type;
-  len = strlen(str);
   len = len < (sizeof(r->errstr) - 1) ? len : (sizeof(r->errstr) - 1);
   memcpy(r->errstr, str, len);
   r->errstr[len] = '\0';
@@ -167,7 +166,7 @@ static char *seekNewline(char *s, size_t len) {
 static int string2ll(const char *s, size_t slen, long long *value) {
   const char *p = s;
   size_t plen = 0;
-  int negative = 0;
+  bool negative = false;
   unsigned long long v;
 
   if (plen == slen)
@@ -181,7 +180,7 @@ static int string2ll(const char *s, size_t slen, long long *value) {
   }
 
   if (p[0] == '-') {
-    negative = 1;
+    negative = true;
     p++;
     plen++;
 
@@ -406,7 +405,7 @@ static int processBulkItem(redisReader *r) {
   char *p, *s;
   long long len;
   unsigned long bytelen;
-  int success = 0;
+  bool success = false;
 
   p = r->buf + r->pos;
   s = seekNewline(p, r->len - r->pos);
@@ -430,7 +429,7 @@ static int processBulkItem(redisReader *r) {
         obj = r->fn->createNil(cur);
       else
         obj = (void *)REDIS_REPLY_NIL;
-      success = 1;
+      success = true;
     } else {
       /* Only continue when the buffer contains the entire bulk item. */
       bytelen += len + 2; /* include \r\n */
@@ -446,7 +445,7 @@ static int processBulkItem(redisReader *r) {
           obj = r->fn->createString(cur, s + 2, len);
         else
           obj = (void *)(uintptr_t)cur->type;
-        success = 1;
+        success = true;
       }
     }
 
@@ -501,7 +500,8 @@ static int processAggregateItem(redisReader *r) {
   void *obj;
   char *p;
   long long elements;
-  int root = 0, len;
+  bool root = false;
+  int len;
 
   if (r->ridx == r->tasks - 1) {
     if (redisReaderGrow(r) == REDIS_ERR)

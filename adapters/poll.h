@@ -4,9 +4,9 @@
 
 #include <alloc.h>
 #include <async.h>
-#include <sockcompat.h>
 #include <errno.h>
 #include <string.h> // for memset
+#include <sys/poll.h>
 #include <sys/time.h>
 
 /* Values to return from redisPollTick */

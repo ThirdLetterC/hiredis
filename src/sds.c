@@ -41,7 +41,7 @@
 #include "sds.h"
 #include "sdsalloc.h"
 
-static inline int sdsHdrSize(char type) {
+static inline size_t sdsHdrSize(char type) {
   switch (type & SDS_TYPE_MASK) {
   case SDS_TYPE_5:
     return sizeof(struct sdshdr5);
@@ -89,7 +89,7 @@ sds sdsnewlen(const void *init, size_t initlen) {
    * since type 5 is not good at this. */
   if (type == SDS_TYPE_5 && initlen == 0)
     type = SDS_TYPE_8;
-  int hdrlen = sdsHdrSize(type);
+  auto hdrlen = sdsHdrSize(type);
   unsigned char *fp; /* flags pointer. */
 
   if (hdrlen + initlen + 1 <= initlen)
@@ -204,7 +204,7 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
   size_t avail = sdsavail(s);
   size_t len, newlen, reqlen;
   char type, oldtype = s[-1] & SDS_TYPE_MASK;
-  int hdrlen;
+  size_t hdrlen;
 
   /* Return ASAP if there is enough space left. */
   if (avail >= addlen)
@@ -261,7 +261,7 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
 sds sdsRemoveFreeSpace(sds s) {
   void *sh, *newsh;
   char type, oldtype = s[-1] & SDS_TYPE_MASK;
-  int hdrlen;
+  size_t hdrlen;
   size_t len = sdslen(s);
   sh = (char *)s - sdsHdrSize(oldtype);
 
@@ -1225,7 +1225,6 @@ void sds_free(void *ptr) {
 #include "testhelp.h"
 #include <stdio.h>
 
-#define UNUSED(x) (void)(x)
 int sdsTest() {
   {
     sds x = sdsnew("foo"), y;

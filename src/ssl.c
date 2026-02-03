@@ -45,8 +45,6 @@
 #include "async_private.h"
 #include "hiredis_ssl.h"
 
-#define OPENSSL_1_1_0 0x10100000L
-
 void __redisSetError(redisContext *c, int type, const char *str);
 
 struct redisSSLContext {
@@ -72,13 +70,13 @@ typedef struct redisSSL {
   size_t lastLen;
 
   /** Whether the SSL layer requires read (possibly before a write) */
-  int wantRead;
+  bool wantRead;
 
   /**
    * Whether a write was requested prior to a read. If set, the write()
    * should resume whenever a read takes place, if possible
    */
-  int pendingWrite;
+  bool pendingWrite;
 } redisSSL;
 
 /* Forward declaration */
@@ -89,7 +87,7 @@ redisContextFuncs redisContextSSLFuncs;
  * Note that this is only required for OpenSSL < 1.1.0.
  */
 
-#if OPENSSL_VERSION_NUMBER < OPENSSL_1_1_0
+#if OPENSSL_VERSION_NUMBER < 0x1010'0000L
 #define HIREDIS_USE_CRYPTO_LOCKS
 #endif
 
@@ -107,7 +105,8 @@ static void sslLockRelease(sslLockType *l) {
 
 static sslLockType *ossl_locks;
 
-static void opensslDoLock(int mode, int lkid, const char *f, int line) {
+static void opensslDoLock(int mode, int lkid, [[maybe_unused]] const char *f,
+                          [[maybe_unused]] int line) {
   sslLockType *l = ossl_locks + lkid;
 
   if (mode & CRYPTO_LOCK) {
@@ -116,8 +115,6 @@ static void opensslDoLock(int mode, int lkid, const char *f, int line) {
     sslLockRelease(l);
   }
 
-  (void)f;
-  (void)line;
 }
 
 static int initOpensslLocks() {
@@ -212,7 +209,7 @@ redisSSLContext *redisCreateSSLContext(const char *cacert_filename, const char *
   return redisCreateSSLContextWithOptions(&options, error);
 }
 
-redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
+redisSSLContext *redisCreateSSLContextWithOptions(const redisSSLOptions *options,
                                                   redisSSLContextError *error) {
   const char *cacert_filename = options->cacert_filename;
   const char *capath = options->capath;
@@ -225,7 +222,7 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
     goto error;
 
   const SSL_METHOD *ssl_method;
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_1_1_0
+#if OPENSSL_VERSION_NUMBER >= 0x1010'0000L
   ssl_method = TLS_client_method();
 #else
   ssl_method = SSLv23_client_method();
@@ -238,7 +235,7 @@ redisSSLContext *redisCreateSSLContextWithOptions(redisSSLOptions *options,
     goto error;
   }
 
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_1_1_0
+#if OPENSSL_VERSION_NUMBER >= 0x1010'0000L
   SSL_CTX_set_min_proto_version(ctx->ssl_ctx, TLS1_2_VERSION);
 #else
   SSL_CTX_set_options(ctx->ssl_ctx,
@@ -315,7 +312,7 @@ static int redisSSLConnect(redisContext *c, SSL *ssl) {
 
   ERR_clear_error();
 
-  int rv = SSL_connect(rssl->ssl);
+  auto rv = SSL_connect(rssl->ssl);
   if (rv == 1) {
     c->funcs = &redisContextSSLFuncs;
     c->privctx = rssl;
@@ -335,7 +332,7 @@ static int redisSSLConnect(redisContext *c, SSL *ssl) {
     if (rv == SSL_ERROR_SYSCALL)
       snprintf(err, sizeof(err) - 1, "SSL_connect failed: %s", strerror(errno));
     else {
-      unsigned long e = ERR_peek_last_error();
+      auto e = ERR_peek_last_error();
       snprintf(err, sizeof(err) - 1, "SSL_connect failed: %s", ERR_reason_error_string(e));
     }
     __redisSetError(c, REDIS_ERR_IO, err);
@@ -394,19 +391,19 @@ error:
   return REDIS_ERR;
 }
 
-static int maybeCheckWant(redisSSL *rssl, int rv) {
+static bool maybeCheckWant(redisSSL *rssl, int rv) {
   /**
    * If the error is WANT_READ or WANT_WRITE, the appropriate flags are set
    * and true is returned. False is returned otherwise
    */
   if (rv == SSL_ERROR_WANT_READ) {
-    rssl->wantRead = 1;
-    return 1;
+    rssl->wantRead = true;
+    return true;
   } else if (rv == SSL_ERROR_WANT_WRITE) {
-    rssl->pendingWrite = 1;
-    return 1;
+    rssl->pendingWrite = true;
+    return true;
   } else {
-    return 0;
+    return false;
   }
 }
 
@@ -429,7 +426,7 @@ static void redisSSLFree(void *privctx) {
 static ssize_t redisSSLRead(redisContext *c, char *buf, size_t bufcap) {
   redisSSL *rssl = c->privctx;
 
-  int nread = SSL_read(rssl->ssl, buf, bufcap);
+  auto nread = SSL_read(rssl->ssl, buf, bufcap);
   if (nread > 0) {
     return nread;
   } else if (nread == 0) {
@@ -472,7 +469,7 @@ static ssize_t redisSSLWrite(redisContext *c) {
   redisSSL *rssl = c->privctx;
 
   size_t len = rssl->lastLen ? rssl->lastLen : sdslen(c->obuf);
-  int rv = SSL_write(rssl->ssl, c->obuf, len);
+  auto rv = SSL_write(rssl->ssl, c->obuf, len);
 
   if (rv > 0) {
     rssl->lastLen = 0;
@@ -495,13 +492,13 @@ static void redisSSLAsyncRead(redisAsyncContext *ac) {
   redisSSL *rssl = ac->c.privctx;
   redisContext *c = &ac->c;
 
-  rssl->wantRead = 0;
+  rssl->wantRead = false;
 
   if (rssl->pendingWrite) {
     int done;
 
     /* This is probably just a write event */
-    rssl->pendingWrite = 0;
+    rssl->pendingWrite = false;
     rv = redisBufferWrite(c, &done);
     if (rv == REDIS_ERR) {
       __redisAsyncDisconnect(ac);
@@ -525,7 +522,7 @@ static void redisSSLAsyncWrite(redisAsyncContext *ac) {
   redisSSL *rssl = ac->c.privctx;
   redisContext *c = &ac->c;
 
-  rssl->pendingWrite = 0;
+  rssl->pendingWrite = false;
   rv = redisBufferWrite(c, &done);
   if (rv == REDIS_ERR) {
     __redisAsyncDisconnect(ac);
@@ -535,7 +532,7 @@ static void redisSSLAsyncWrite(redisAsyncContext *ac) {
   if (!done) {
     if (rssl->wantRead) {
       /* Need to read-before-write */
-      rssl->pendingWrite = 1;
+      rssl->pendingWrite = true;
       _EL_DEL_WRITE(ac);
     } else {
       /* No extra reads needed, just need to write more */
