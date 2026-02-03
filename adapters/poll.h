@@ -49,7 +49,7 @@ static int redisPollTick(redisAsyncContext *ac, double timeout) {
   int ns;
   int itimeout;
 
-  auto *e = (redisPollEvents *)ac->ev.data;
+  auto e = (redisPollEvents *)ac->ev.data;
   if (e == nullptr)
     return 0;
 
@@ -120,27 +120,27 @@ static int redisPollTick(redisAsyncContext *ac, double timeout) {
 }
 
 static void redisPollAddRead(void *data) {
-  auto *e = (redisPollEvents *)data;
+  auto e = (redisPollEvents *)data;
   e->reading = true;
 }
 
 static void redisPollDelRead(void *data) {
-  auto *e = (redisPollEvents *)data;
+  auto e = (redisPollEvents *)data;
   e->reading = false;
 }
 
 static void redisPollAddWrite(void *data) {
-  auto *e = (redisPollEvents *)data;
+  auto e = (redisPollEvents *)data;
   e->writing = true;
 }
 
 static void redisPollDelWrite(void *data) {
-  auto *e = (redisPollEvents *)data;
+  auto e = (redisPollEvents *)data;
   e->writing = false;
 }
 
 static void redisPollCleanup(void *data) {
-  auto *e = (redisPollEvents *)data;
+  auto e = (redisPollEvents *)data;
 
   /* if we are currently processing a tick, postpone deletion */
   if (e->in_tick)
@@ -150,13 +150,13 @@ static void redisPollCleanup(void *data) {
 }
 
 static void redisPollScheduleTimer(void *data, struct timeval tv) {
-  auto *e = (redisPollEvents *)data;
+  auto e = (redisPollEvents *)data;
   double now = redisPollGetNow();
   e->deadline = now + redisPollTimevalToDouble(&tv);
 }
 
 static int redisPollAttach(redisAsyncContext *ac) {
-  auto *c = &(ac->c);
+  auto c = &(ac->c);
   redisPollEvents *e;
 
   /* Nothing should be attached when something is already attached */

@@ -58,7 +58,7 @@ static unsigned int callbackHash(const void *key) {
 }
 
 static void *callbackValDup([[maybe_unused]] void *privdata, const void *src) {
-  auto *dup = hi_malloc(sizeof(redisCallback));
+  auto dup = (redisCallback *)hi_malloc(sizeof(redisCallback));
   if (dup == nullptr)
     return nullptr;
 

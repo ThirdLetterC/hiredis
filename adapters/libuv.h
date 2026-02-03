@@ -14,7 +14,7 @@ typedef struct redisLibuvEvents {
 } redisLibuvEvents;
 
 static void redisLibuvPoll(uv_poll_t *handle, int status, int events) {
-  auto *p = (redisLibuvEvents *)handle->data;
+  auto p = (redisLibuvEvents *)handle->data;
   auto ev = (status != 0) ? p->events : events;
 
   if (p->context != nullptr && (ev & UV_READABLE)) {
@@ -26,7 +26,7 @@ static void redisLibuvPoll(uv_poll_t *handle, int status, int events) {
 }
 
 static void redisLibuvAddRead(void *privdata) {
-  auto *p = (redisLibuvEvents *)privdata;
+  auto p = (redisLibuvEvents *)privdata;
 
   if (p->events & UV_READABLE) {
     return;
@@ -38,7 +38,7 @@ static void redisLibuvAddRead(void *privdata) {
 }
 
 static void redisLibuvDelRead(void *privdata) {
-  auto *p = (redisLibuvEvents *)privdata;
+  auto p = (redisLibuvEvents *)privdata;
 
   p->events &= ~UV_READABLE;
 
@@ -50,7 +50,7 @@ static void redisLibuvDelRead(void *privdata) {
 }
 
 static void redisLibuvAddWrite(void *privdata) {
-  auto *p = (redisLibuvEvents *)privdata;
+  auto p = (redisLibuvEvents *)privdata;
 
   if (p->events & UV_WRITABLE) {
     return;
@@ -62,7 +62,7 @@ static void redisLibuvAddWrite(void *privdata) {
 }
 
 static void redisLibuvDelWrite(void *privdata) {
-  auto *p = (redisLibuvEvents *)privdata;
+  auto p = (redisLibuvEvents *)privdata;
 
   p->events &= ~UV_WRITABLE;
 
@@ -74,7 +74,7 @@ static void redisLibuvDelWrite(void *privdata) {
 }
 
 static void on_timer_close(uv_handle_t *handle) {
-  auto *p = (redisLibuvEvents *)handle->data;
+  auto p = (redisLibuvEvents *)handle->data;
   p->timer.data = nullptr;
   if (!p->handle.data) {
     // both timer and handle are closed
@@ -84,7 +84,7 @@ static void on_timer_close(uv_handle_t *handle) {
 }
 
 static void on_handle_close(uv_handle_t *handle) {
-  auto *p = (redisLibuvEvents *)handle->data;
+  auto p = (redisLibuvEvents *)handle->data;
   p->handle.data = nullptr;
   if (!p->timer.data) {
     // timer never started, or timer already destroyed
@@ -101,12 +101,12 @@ static void redisLibuvTimeout(uv_timer_t *timer, [[maybe_unused]] int status) {
 #else
 static void redisLibuvTimeout(uv_timer_t *timer) {
 #endif
-  auto *e = (redisLibuvEvents *)timer->data;
+  auto e = (redisLibuvEvents *)timer->data;
   redisAsyncHandleTimeout(e->context);
 }
 
 static void redisLibuvSetTimeout(void *privdata, struct timeval tv) {
-  auto *p = (redisLibuvEvents *)privdata;
+  auto p = (redisLibuvEvents *)privdata;
 
   auto millsec = (uint64_t)tv.tv_sec * 1'000 + (uint64_t)(tv.tv_usec / 1'000);
   if (!p->timer.data) {
@@ -122,7 +122,7 @@ static void redisLibuvSetTimeout(void *privdata, struct timeval tv) {
 }
 
 static void redisLibuvCleanup(void *privdata) {
-  auto *p = (redisLibuvEvents *)privdata;
+  auto p = (redisLibuvEvents *)privdata;
 
   p->context = nullptr; // indicate that context might no longer exist
   if (p->timer.data) {
@@ -132,7 +132,7 @@ static void redisLibuvCleanup(void *privdata) {
 }
 
 [[maybe_unused]] static int redisLibuvAttach(redisAsyncContext *ac, uv_loop_t *loop) {
-  auto *c = &(ac->c);
+  auto c = &(ac->c);
 
   if (ac->ev.data != nullptr) {
     return REDIS_ERR;
@@ -145,7 +145,7 @@ static void redisLibuvCleanup(void *privdata) {
   ac->ev.cleanup = redisLibuvCleanup;
   ac->ev.scheduleTimer = redisLibuvSetTimeout;
 
-  auto *p = (redisLibuvEvents *)hi_calloc(1, sizeof(redisLibuvEvents));
+  auto p = (redisLibuvEvents *)hi_calloc(1, sizeof(redisLibuvEvents));
   if (p == nullptr)
     return REDIS_ERR;
 
