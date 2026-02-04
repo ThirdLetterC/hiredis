@@ -34,6 +34,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -307,12 +308,12 @@ static size_t bulklen(size_t len) {
 int redisvFormatCommand(char **target, const char *format, va_list ap) {
   const char *c = format;
   char *cmd = nullptr; /* final command */
-  int pos;             /* position in final command */
+  size_t pos;          /* position in final command */
   sds curarg, newarg;  /* current argument */
   int touched = 0;     /* was the current argument touched? */
   char **curargv = nullptr, **newargv = nullptr;
   int argc = 0;
-  int totlen = 0;
+  size_t totlen = 0;
   int error_type = 0; /* 0 = no error; -1 = memory error; -2 = format error */
   int j;
 
@@ -334,7 +335,10 @@ int redisvFormatCommand(char **target, const char *format, va_list ap) {
             goto memory_err;
           curargv = newargv;
           curargv[argc++] = curarg;
-          totlen += bulklen(sdslen(curarg));
+          auto bulk = bulklen(sdslen(curarg));
+          if (totlen > SIZE_MAX - bulk)
+            goto memory_err;
+          totlen += bulk;
 
           /* curarg is put in argv so it can be overwritten. */
           curarg = sdsempty();
@@ -498,7 +502,10 @@ int redisvFormatCommand(char **target, const char *format, va_list ap) {
       goto memory_err;
     curargv = newargv;
     curargv[argc++] = curarg;
-    totlen += bulklen(sdslen(curarg));
+    auto bulk = bulklen(sdslen(curarg));
+    if (totlen > SIZE_MAX - bulk)
+      goto memory_err;
+    totlen += bulk;
   } else {
     sdsfree(curarg);
   }
@@ -507,27 +514,32 @@ int redisvFormatCommand(char **target, const char *format, va_list ap) {
   curarg = nullptr;
 
   /* Add bytes needed to hold multi bulk count */
-  totlen += 1 + countDigits(argc) + 2;
+  auto header = (size_t)1 + countDigits(argc) + 2;
+  if (totlen > SIZE_MAX - header)
+    goto memory_err;
+  totlen += header;
+  if (totlen > INT_MAX)
+    goto memory_err;
 
   /* Build the command at protocol level */
   cmd = hi_malloc(totlen + 1);
   if (cmd == nullptr)
     goto memory_err;
 
-  auto written = snprintf(cmd, (size_t)totlen + 1, "*%d\r\n", argc);
-  if (written < 0 || written > totlen) {
+  auto written = snprintf(cmd, totlen + 1, "*%d\r\n", argc);
+  if (written < 0 || (size_t)written > totlen) {
     error_type = -2;
     goto cleanup;
   }
-  pos = written;
+  pos = (size_t)written;
   for (j = 0; j < argc; j++) {
-    auto remaining = (size_t)totlen - (size_t)pos + 1;
+    auto remaining = totlen - pos + 1;
     written = snprintf(cmd + pos, remaining, "$%zu\r\n", sdslen(curargv[j]));
     if (written < 0 || (size_t)written >= remaining) {
       error_type = -2;
       goto cleanup;
     }
-    pos += written;
+    pos += (size_t)written;
     memcpy(cmd + pos, curargv[j], sdslen(curargv[j]));
     pos += sdslen(curargv[j]);
     sdsfree(curargv[j]);
@@ -539,7 +551,7 @@ int redisvFormatCommand(char **target, const char *format, va_list ap) {
 
   hi_free(curargv);
   *target = cmd;
-  return totlen;
+  return (int)totlen;
 
 format_err:
   error_type = -2;

@@ -33,6 +33,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <strings.h>
 
@@ -793,19 +794,53 @@ void redisAsyncHandleTimeout(redisAsyncContext *ac) {
 
 /* Sets a pointer to the first argument and its length starting at p. Returns
  * the number of bytes to skip to get to the following argument. */
-static const char *nextArgument(const char *start, const char **str, size_t *len) {
+static const char *nextArgument(const char *start, const char *end, const char **str,
+                                size_t *len) {
+  if (start == nullptr || end == nullptr || start >= end)
+    return nullptr;
+
   const char *p = start;
   if (p[0] != '$') {
-    p = strchr(p, '$');
+    p = memchr(p, '$', (size_t)(end - p));
     if (p == nullptr)
       return nullptr;
   }
 
-  *len = (int)strtol(p + 1, nullptr, 10);
-  p = strchr(p, '\r');
-  assert(p);
-  *str = p + 2;
-  return p + 2 + (*len) + 2;
+  p += 1;
+  if (p >= end)
+    return nullptr;
+
+  size_t value = 0;
+  bool has_digit = false;
+  for (; p < end; p++) {
+    if (p[0] < '0' || p[0] > '9')
+      break;
+    has_digit = true;
+    auto digit = (size_t)(p[0] - '0');
+    if (value > (SIZE_MAX - digit) / 10)
+      return nullptr;
+    value = (value * 10) + digit;
+  }
+
+  if (!has_digit)
+    return nullptr;
+  if (p + 1 >= end || p[0] != '\r' || p[1] != '\n')
+    return nullptr;
+
+  const char *payload = p + 2;
+  if (value > SIZE_MAX - 2)
+    return nullptr;
+  size_t needed = value + 2;
+  if ((size_t)(end - payload) < needed)
+    return nullptr;
+  if (payload[value] != '\r' || payload[value + 1] != '\n')
+    return nullptr;
+
+  if (str != nullptr)
+    *str = payload;
+  if (len != nullptr)
+    *len = value;
+  return payload + needed;
 }
 
 /* Helper function for the redisAsyncCommand* family of functions. Writes a
@@ -825,6 +860,7 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void 
   const char *p;
   sds sname;
   int ret;
+  const char *cmd_end = cmd + len;
 
   /* Don't accept new commands when the connection is about to be closed. */
   if (c->flags & (REDIS_DISCONNECTING | REDIS_FREEING))
@@ -836,10 +872,16 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void 
   cb.pending_subs = 1;
   cb.unsubscribe_sent = 0;
 
+  auto newbuf = sdsMakeRoomFor(c->obuf, len);
+  if (newbuf == nullptr)
+    goto oom;
+  c->obuf = newbuf;
+
   /* Find out which command will be appended. */
-  p = nextArgument(cmd, &cstr, &clen);
-  assert(p != nullptr);
-  hasnext = (p[0] == '$');
+  p = nextArgument(cmd, cmd_end, &cstr, &clen);
+  if (p == nullptr)
+    goto badfmt;
+  hasnext = (p < cmd_end && p[0] == '$');
   pvariant = (tolower(cstr[0]) == 'p') ? 1 : 0;
   cstr += pvariant;
   clen -= pvariant;
@@ -848,7 +890,9 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void 
     c->flags |= REDIS_SUBSCRIBED;
 
     /* Add every channel/pattern to the list of subscription callbacks. */
-    while ((p = nextArgument(p, &astr, &alen)) != nullptr) {
+    bool parsed_any = false;
+    while ((p = nextArgument(p, cmd_end, &astr, &alen)) != nullptr) {
+      parsed_any = true;
       sname = sdsnewlen(astr, alen);
       if (sname == nullptr)
         goto oom;
@@ -870,6 +914,8 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void 
       if (ret == 0)
         sdsfree(sname);
     }
+    if (!parsed_any)
+      goto badfmt;
   } else if (strncasecmp(cstr, "unsubscribe\r\n", 13) == 0) {
     /* It is only useful to call (P)UNSUBSCRIBE when the context is
      * subscribed to one or more channels or patterns. */
@@ -884,7 +930,9 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void 
     if (hasnext) {
       /* Send an unsubscribe with specific channels/patterns.
        * Bookkeeping the number of expected replies */
-      while ((p = nextArgument(p, &astr, &alen)) != nullptr) {
+      bool parsed_any = false;
+      while ((p = nextArgument(p, cmd_end, &astr, &alen)) != nullptr) {
+        parsed_any = true;
         sname = sdsnewlen(astr, alen);
         if (sname == nullptr)
           goto oom;
@@ -903,6 +951,8 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void 
         }
         sdsfree(sname);
       }
+      if (!parsed_any)
+        goto badfmt;
     } else {
       /* Send an unsubscribe without specific channels/patterns.
        * Bookkeeping the number of expected replies */
@@ -939,12 +989,17 @@ static int __redisAsyncCommand(redisAsyncContext *ac, redisCallbackFn *fn, void 
     }
   }
 
-  __redisAppendCommand(c, cmd, len);
+  if (__redisAppendCommand(c, cmd, len) != REDIS_OK)
+    goto oom;
 
   /* Always schedule a write when the write buffer is non-empty */
   _EL_ADD_WRITE(ac);
 
   return REDIS_OK;
+badfmt:
+  __redisSetError(&(ac->c), REDIS_ERR_OTHER, "Invalid formatted command");
+  __redisAsyncCopyError(ac);
+  return REDIS_ERR;
 oom:
   __redisSetError(&(ac->c), REDIS_ERR_OOM, "Out of memory");
   __redisAsyncCopyError(ac);

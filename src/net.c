@@ -259,7 +259,7 @@ static int redisContextTimeoutMsec(redisContext *c, long *result) {
 
   /* Only use timeout when not nullptr. */
   if (timeout != nullptr) {
-    if (timeout->tv_usec > microseconds_per_second || timeout->tv_sec > MAX_MSEC) {
+    if (timeout->tv_usec >= microseconds_per_second || timeout->tv_sec > MAX_MSEC) {
       __redisSetError(c, REDIS_ERR_IO, "Invalid timeout specified");
       *result = msec;
       return REDIS_ERR;
@@ -483,6 +483,8 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
   } else if (c->tcp.source_addr != source_addr) {
     hi_free(c->tcp.source_addr);
     c->tcp.source_addr = hi_strdup(source_addr);
+    if (c->tcp.source_addr == nullptr)
+      goto oom;
   }
 
   snprintf(port_buf, sizeof(port_buf), "%d", port);
@@ -671,8 +673,15 @@ int redisContextConnectUnix(redisContext *c, const char *path, const struct time
     goto oom;
 
   c->addrlen = sizeof(struct sockaddr_un);
+  memset(sa, 0, sizeof(*sa));
+  size_t path_len = strlen(path);
+  if (path_len >= sizeof(sa->sun_path)) {
+    __redisSetError(c, REDIS_ERR_OTHER, "UNIX socket path too long");
+    return REDIS_ERR;
+  }
   sa->sun_family = AF_UNIX;
-  strncpy(sa->sun_path, path, sizeof(sa->sun_path) - 1);
+  memcpy(sa->sun_path, path, path_len);
+  sa->sun_path[path_len] = '\0';
   if (connect(c->fd, (struct sockaddr *)sa, sizeof(*sa)) == -1) {
     if ((errno == EAGAIN || errno == EINPROGRESS) && !blocking) {
       /* This is ok. */
