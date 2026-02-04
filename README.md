@@ -29,8 +29,9 @@ Example binaries:
 1. `example`
 2. `example-push`
 3. `example-poll`
-4. `example-ssl` (requires `-Dssl=true`)
-5. `example-libuv` (requires `-Dlibuv=true`)
+4. `example-streams-threads`
+5. `example-ssl` (requires `-Dssl=true`)
+6. `example-libuv` (requires `-Dlibuv=true`)
 
 **Headers**
 

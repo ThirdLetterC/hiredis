@@ -794,8 +794,7 @@ void redisAsyncHandleTimeout(redisAsyncContext *ac) {
 
 /* Sets a pointer to the first argument and its length starting at p. Returns
  * the number of bytes to skip to get to the following argument. */
-static const char *nextArgument(const char *start, const char *end, const char **str,
-                                size_t *len) {
+static const char *nextArgument(const char *start, const char *end, const char **str, size_t *len) {
   if (start == nullptr || end == nullptr || start >= end)
     return nullptr;
 
