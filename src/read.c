@@ -235,6 +235,17 @@ static int string2ll(const char *s, size_t slen, long long *value) {
   return REDIS_OK;
 }
 
+static int longLongToSize(long long value, size_t *target) {
+  if (value < 0)
+    return REDIS_ERR;
+
+  if (sizeof(size_t) < sizeof(long long) && value > (long long)SIZE_MAX)
+    return REDIS_ERR;
+
+  *target = (size_t)value;
+  return REDIS_OK;
+}
+
 static char *readLine(redisReader *r, int *_len) {
   char *p, *s;
   int len;
@@ -409,7 +420,7 @@ static int processBulkItem(redisReader *r) {
   void *obj = nullptr;
   char *p, *s;
   long long len;
-  unsigned long bytelen;
+  size_t bytelen;
   bool success = false;
 
   p = r->buf + r->pos;
@@ -423,7 +434,7 @@ static int processBulkItem(redisReader *r) {
       return REDIS_ERR;
     }
 
-    if (len < -1 || (LLONG_MAX > SIZE_MAX && len > (long long)SIZE_MAX)) {
+    if (len < -1) {
       __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Bulk string length out of range");
       return REDIS_ERR;
     }
@@ -436,10 +447,18 @@ static int processBulkItem(redisReader *r) {
         obj = (void *)REDIS_REPLY_NIL;
       success = true;
     } else {
+      size_t payload_len;
+      if (longLongToSize(len, &payload_len) == REDIS_ERR || payload_len > SIZE_MAX - 2 ||
+          bytelen > SIZE_MAX - (payload_len + 2)) {
+        __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Bulk string length out of range");
+        return REDIS_ERR;
+      }
+
+      size_t total_len = bytelen + payload_len + 2; /* include payload + trailing \r\n */
+
       /* Only continue when the buffer contains the entire bulk item. */
-      bytelen += len + 2; /* include \r\n */
-      if (r->pos + bytelen <= r->len) {
-        if ((cur->type == REDIS_REPLY_VERB && len < 4) ||
+      if (total_len <= (r->len - r->pos)) {
+        if ((cur->type == REDIS_REPLY_VERB && payload_len < 4) ||
             (cur->type == REDIS_REPLY_VERB && s[5] != ':')) {
           __redisReaderSetError(r, REDIS_ERR_PROTOCOL,
                                 "Verbatim string 4 bytes of content type are "
@@ -447,9 +466,10 @@ static int processBulkItem(redisReader *r) {
           return REDIS_ERR;
         }
         if (r->fn && r->fn->createString)
-          obj = r->fn->createString(cur, s + 2, len);
+          obj = r->fn->createString(cur, s + 2, payload_len);
         else
           obj = (void *)(uintptr_t)cur->type;
+        bytelen = total_len;
         success = true;
       }
     }
@@ -504,7 +524,7 @@ static int processAggregateItem(redisReader *r) {
   redisReadTask *cur = r->task[r->ridx];
   void *obj;
   char *p;
-  long long elements;
+  long long elements, task_elements;
   bool root = false;
   int len;
 
@@ -521,8 +541,7 @@ static int processAggregateItem(redisReader *r) {
 
     root = (r->ridx == 0);
 
-    if (elements < -1 || (LLONG_MAX > SIZE_MAX && elements > (long long)SIZE_MAX) ||
-        (r->maxelements > 0 && elements > r->maxelements)) {
+    if (elements < -1 || (r->maxelements > 0 && elements > r->maxelements)) {
       __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Multi-bulk length out of range");
       return REDIS_ERR;
     }
@@ -540,11 +559,25 @@ static int processAggregateItem(redisReader *r) {
 
       moveToNextTask(r);
     } else {
-      if (cur->type == REDIS_REPLY_MAP || cur->type == REDIS_REPLY_ATTR)
-        elements *= 2;
+      size_t element_count;
+
+      task_elements = elements;
+      if (cur->type == REDIS_REPLY_MAP || cur->type == REDIS_REPLY_ATTR) {
+        if (task_elements <= LLONG_MAX / 2) {
+          task_elements *= 2;
+        } else {
+          __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Multi-bulk length out of range");
+          return REDIS_ERR;
+        }
+      }
+
+      if (longLongToSize(task_elements, &element_count) == REDIS_ERR) {
+        __redisReaderSetError(r, REDIS_ERR_PROTOCOL, "Multi-bulk length out of range");
+        return REDIS_ERR;
+      }
 
       if (r->fn && r->fn->createArray)
-        obj = r->fn->createArray(cur, elements);
+        obj = r->fn->createArray(cur, element_count);
       else
         obj = (void *)(uintptr_t)cur->type;
 
@@ -554,8 +587,8 @@ static int processAggregateItem(redisReader *r) {
       }
 
       /* Modify task stack when there are more than 0 elements. */
-      if (elements > 0) {
-        cur->elements = elements;
+      if (task_elements > 0) {
+        cur->elements = task_elements;
         cur->obj = obj;
         r->ridx++;
         r->task[r->ridx]->type = -1;

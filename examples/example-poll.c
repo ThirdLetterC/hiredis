@@ -45,7 +45,9 @@ int main(int argc, char **argv) {
   constexpr int default_port = 6'379;
   auto c = redisAsyncConnect("127.0.0.1", default_port);
   if (c == nullptr || c->err) {
-    /* Let *c leak for now... */
+    if (c != nullptr) {
+      redisAsyncFree(c);
+    }
     printf("Error: %s\n", c ? c->errstr : "can't allocate redis context");
     return 1;
   }
@@ -53,10 +55,13 @@ int main(int argc, char **argv) {
   redisPollAttach(c);
   redisAsyncSetConnectCallback(c, connectCallback);
   redisAsyncSetDisconnectCallback(c, disconnectCallback);
-  const char *value = argv[argc - 1];
+  const char *value = (argc > 1) ? argv[1] : "poll-example-value";
   auto value_len = strlen(value);
-  redisAsyncCommand(c, nullptr, nullptr, "SET key %b", value, value_len);
-  redisAsyncCommand(c, getCallback, (char *)"end-1", "GET key");
+  if (redisAsyncCommand(c, nullptr, nullptr, "SET key %b", value, value_len) != REDIS_OK ||
+      redisAsyncCommand(c, getCallback, (char *)"end-1", "GET key") != REDIS_OK) {
+    printf("Error: %s\n", c->errstr ? c->errstr : "failed to queue async command");
+    redisAsyncDisconnect(c);
+  }
   constexpr double tick_seconds = 0.1;
   while (!exit_loop) {
     redisPollTick(c, tick_seconds);

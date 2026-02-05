@@ -170,7 +170,8 @@ static int initOpensslLocks() {
 int redisInitOpenSSL() {
 #ifdef HIREDIS_USE_CRYPTO_LOCKS
   SSL_library_init();
-  initOpensslLocks();
+  if (initOpensslLocks() != REDIS_OK)
+    return REDIS_ERR;
 #endif
 
   return REDIS_OK;
@@ -242,6 +243,12 @@ redisSSLContext *redisCreateSSLContext(const char *cacert_filename, const char *
 
 redisSSLContext *redisCreateSSLContextWithOptions(const redisSSLOptions *options,
                                                   redisSSLContextError *error) {
+  if (options == nullptr) {
+    if (error)
+      *error = REDIS_SSL_CTX_CREATE_FAILED;
+    return nullptr;
+  }
+
   const char *cacert_filename = options->cacert_filename;
   const char *capath = options->capath;
   const char *cert_filename = options->cert_filename;
@@ -249,8 +256,11 @@ redisSSLContext *redisCreateSSLContextWithOptions(const redisSSLOptions *options
   const char *server_name = options->server_name;
 
   redisSSLContext *ctx = hi_calloc(1, sizeof(redisSSLContext));
-  if (ctx == nullptr)
+  if (ctx == nullptr) {
+    if (error)
+      *error = REDIS_SSL_CTX_CREATE_FAILED;
     goto error;
+  }
 
   const SSL_METHOD *ssl_method;
 #if OPENSSL_VERSION_NUMBER >= 0x1010'0000L
@@ -309,8 +319,14 @@ redisSSLContext *redisCreateSSLContextWithOptions(const redisSSLOptions *options
     }
   }
 
-  if (server_name)
+  if (server_name) {
     ctx->server_name = hi_strdup(server_name);
+    if (ctx->server_name == nullptr) {
+      if (error)
+        *error = REDIS_SSL_CTX_CREATE_FAILED;
+      goto error;
+    }
+  }
 
   return ctx;
 
