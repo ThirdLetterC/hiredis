@@ -37,12 +37,12 @@
 #include <string.h>
 #include <strings.h>
 
-#include "async.h"
-#include "alloc.h"
+#include "hiredis/async.h"
+#include "hiredis/alloc.h"
 #include "dict.c"
-#include "net.h"
-#include "sds.h"
-#include "async_private.h"
+#include "hiredis/net.h"
+#include "hiredis/sds.h"
+#include "hiredis/async_private.h"
 
 #ifdef NDEBUG
 #undef assert

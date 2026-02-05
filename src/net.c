@@ -49,8 +49,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "net.h"
-#include "alloc.h"
+#include "hiredis/net.h"
+#include "hiredis/alloc.h"
 
 /* Defined in hiredis.c */
 void __redisSetError(redisContext *c, int type, const char *str);

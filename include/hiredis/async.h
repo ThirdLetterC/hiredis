@@ -32,7 +32,7 @@
 #ifndef __HIREDIS_ASYNC_H
 #define __HIREDIS_ASYNC_H
 
-#include "hiredis.h"
+#include "hiredis/hiredis.h"
 
 struct redisAsyncContext; /* need forward declaration of redisAsyncContext */
 struct dict;              /* dictionary header is included in async.c */

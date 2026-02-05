@@ -4,7 +4,7 @@
 #include <threads.h>
 #include <time.h>
 
-#include "hiredis.h"
+#include "hiredis/hiredis.h"
 
 typedef struct {
   const char *host;

@@ -35,7 +35,7 @@
 #ifndef __NET_H
 #define __NET_H
 
-#include "hiredis.h"
+#include "hiredis/hiredis.h"
 
 void redisNetClose(redisContext *c);
 ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);

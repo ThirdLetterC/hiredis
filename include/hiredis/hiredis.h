@@ -39,8 +39,8 @@
 #include <sys/time.h>  /* for struct timeval */
 #include <sys/types.h> /* for ssize_t */
 
-#include "read.h"
-#include "sds.h"
+#include "hiredis/read.h"
+#include "hiredis/sds.h"
 
 [[maybe_unused]] static constexpr int HIREDIS_MAJOR = 1;
 [[maybe_unused]] static constexpr int HIREDIS_MINOR = 3;

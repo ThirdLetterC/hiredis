@@ -3,9 +3,9 @@
 
 #include <uv.h>
 
-#include "alloc.h"
-#include "async.h"
-#include "hiredis.h"
+#include "hiredis/alloc.h"
+#include "hiredis/async.h"
+#include "hiredis/hiredis.h"
 
 typedef struct redisLibuvEvents {
   redisAsyncContext *context;

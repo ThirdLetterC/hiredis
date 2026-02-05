@@ -39,11 +39,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "alloc.h"
-#include "async.h"
-#include "hiredis.h"
-#include "net.h"
-#include "sds.h"
+#include "hiredis/alloc.h"
+#include "hiredis/async.h"
+#include "hiredis/hiredis.h"
+#include "hiredis/net.h"
+#include "hiredis/sds.h"
 
 extern int redisContextUpdateConnectTimeout(redisContext *c, const struct timeval *timeout);
 extern int redisContextUpdateCommandTimeout(redisContext *c, const struct timeval *timeout);

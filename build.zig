@@ -88,7 +88,7 @@ pub fn build(b: *std.Build) void {
     }
 
     b.installDirectory(.{
-        .source_dir = b.path("src/include"),
+        .source_dir = b.path("include"),
         .install_dir = .header,
         .install_subdir = "",
     });
@@ -186,7 +186,7 @@ fn addHiredisLibrary(
         .link_libc = true,
     });
     module.addIncludePath(b.path("."));
-    module.addIncludePath(b.path("src/include"));
+    module.addIncludePath(b.path("include"));
     module.addCSourceFiles(.{ .files = &base_sources, .flags = base_cflags });
     module.addCSourceFiles(.{ .files = &fmacros_sources, .flags = fmacros_cflags });
 
@@ -227,7 +227,7 @@ fn addExample(
         .link_libc = true,
     });
     module.addIncludePath(b.path("."));
-    module.addIncludePath(b.path("src/include"));
+    module.addIncludePath(b.path("include"));
     module.addCSourceFiles(.{ .files = &[_][]const u8{source}, .flags = cflags });
 
     const exe = b.addExecutable(.{ .name = name, .root_module = module });

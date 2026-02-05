@@ -32,7 +32,7 @@
 #ifndef __HIREDIS_ASYNC_PRIVATE_H
 #define __HIREDIS_ASYNC_PRIVATE_H
 
-#include "async.h"
+#include "hiredis/async.h"
 
 #define _EL_ADD_READ(ctx)                                                                          \
   do {                                                                                             \

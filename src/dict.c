@@ -36,8 +36,8 @@
 #include <assert.h>
 #include <limits.h>
 
-#include "dict.h"
-#include "alloc.h"
+#include "hiredis/dict.h"
+#include "hiredis/alloc.h"
 
 /* -------------------------- private prototypes ---------------------------- */
 

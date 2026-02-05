@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "hiredis.h"
+#include "hiredis/hiredis.h"
 
 static constexpr unsigned int KEY_COUNT = 5;
 

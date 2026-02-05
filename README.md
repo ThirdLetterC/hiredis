@@ -35,7 +35,7 @@ Example binaries:
 
 **Headers**
 
-1. Public headers live in `src/include`.
+1. Public headers live in `include/hiredis`.
 2. Adapter headers live in `adapters`.
 
 **Formatting**

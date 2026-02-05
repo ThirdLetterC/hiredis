@@ -2,8 +2,8 @@
 #ifndef HIREDIS_POLL_H
 #define HIREDIS_POLL_H
 
-#include <alloc.h>
-#include <async.h>
+#include "hiredis/alloc.h"
+#include "hiredis/async.h"
 #include <errno.h>
 #include <sys/poll.h>
 #include <sys/time.h>

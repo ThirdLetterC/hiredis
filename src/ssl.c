@@ -39,12 +39,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "alloc.h"
-#include "async.h"
-#include "hiredis.h"
-#include "net.h"
-#include "async_private.h"
-#include "hiredis_ssl.h"
+#include "hiredis/alloc.h"
+#include "hiredis/async.h"
+#include "hiredis/hiredis.h"
+#include "hiredis/net.h"
+#include "hiredis/async_private.h"
+#include "hiredis/hiredis_ssl.h"
 
 void __redisSetError(redisContext *c, int type, const char *str);
 

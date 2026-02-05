@@ -32,7 +32,7 @@
 #ifndef __HIREDIS_SSL_H
 #define __HIREDIS_SSL_H
 
-#include "hiredis.h"
+#include "hiredis/hiredis.h"
 
 /* This is the underlying struct for SSL in ssl.h, which is not included to
  * keep build dependencies short here.

@@ -39,9 +39,9 @@
 #include <strings.h>
 #include <unistd.h>
 
-#include "alloc.h"
-#include "read.h"
-#include "sds.h"
+#include "hiredis/alloc.h"
+#include "hiredis/read.h"
+#include "hiredis/sds.h"
 
 /* Initial size of our nested reply stack and how much we grow it when needd */
 static constexpr int REDIS_READER_STACK_SIZE = 9;

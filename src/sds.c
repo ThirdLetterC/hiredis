@@ -38,8 +38,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sds.h"
-#include "alloc.h"
+#include "hiredis/sds.h"
+#include "hiredis/alloc.h"
 
 #define s_malloc hi_malloc
 #define s_realloc hi_realloc
