@@ -40,10 +40,6 @@
 
 [[maybe_unused]] static constexpr size_t SDS_MAX_PREALLOC = 1'048'576;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef char *sds;
 
 /* Note: sdshdr5 is never used, we just access the flags byte directly.
@@ -271,7 +267,4 @@ void sds_free(void *ptr);
 int sdsTest(int argc, char *argv[]);
 #endif
 
-#ifdef __cplusplus
-}
-#endif
 #endif

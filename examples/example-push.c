@@ -28,10 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <hiredis.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "hiredis.h"
 
 static constexpr unsigned int KEY_COUNT = 5;
 

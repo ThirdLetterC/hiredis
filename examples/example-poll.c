@@ -3,8 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <adapters/poll.h>
-#include <async.h>
+#include "adapters/poll.h"
+#include "async.h"
 
 /* Put in the global scope, so that loop can be explicitly stopped */
 static bool exit_loop = false;

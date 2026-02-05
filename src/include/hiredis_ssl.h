@@ -34,10 +34,6 @@
 
 #include "hiredis.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* This is the underlying struct for SSL in ssl.h, which is not included to
  * keep build dependencies short here.
  */
@@ -165,9 +161,5 @@ int redisInitiateSSLWithContext(redisContext *c, redisSSLContext *redis_ssl_ctx)
  */
 
 int redisInitiateSSL(redisContext *c, struct ssl_st *ssl);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __HIREDIS_SSL_H */

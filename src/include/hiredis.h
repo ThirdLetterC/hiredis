@@ -34,12 +34,13 @@
 #ifndef __HIREDIS_H
 #define __HIREDIS_H
 
-#include "read.h"
-#include "sds.h"       /* for sds */
 #include <stdarg.h>    /* for va_list */
 #include <stdint.h>    /* uintXX_t, etc */
 #include <sys/time.h>  /* for struct timeval */
 #include <sys/types.h> /* for ssize_t */
+
+#include "read.h"
+#include "sds.h"
 
 [[maybe_unused]] static constexpr int HIREDIS_MAJOR = 1;
 [[maybe_unused]] static constexpr int HIREDIS_MINOR = 3;
@@ -108,10 +109,6 @@ struct redisContext;
 #define redisIsPushReply(r) (((redisReply *)(r))->type == REDIS_REPLY_PUSH)
 typedef void(redisPushFn)(void *, void *);
 typedef void(redisAsyncPushFn)(struct redisAsyncContext *, void *);
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* This is the reply object returned by redisCommand() */
 typedef struct redisReply {
@@ -349,9 +346,5 @@ int redisAppendCommandArgv(redisContext *c, int argc, const char **argv, const s
 [[nodiscard]] void *redisCommand(redisContext *c, const char *format, ...);
 [[nodiscard]] void *redisCommandArgv(redisContext *c, int argc, const char **argv,
                                      const size_t *argvlen);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

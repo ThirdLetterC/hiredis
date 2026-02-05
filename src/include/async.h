@@ -31,11 +31,8 @@
 
 #ifndef __HIREDIS_ASYNC_H
 #define __HIREDIS_ASYNC_H
-#include "hiredis.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "hiredis.h"
 
 struct redisAsyncContext; /* need forward declaration of redisAsyncContext */
 struct dict;              /* dictionary header is included in async.c */
@@ -149,9 +146,5 @@ int redisAsyncCommandArgv(redisAsyncContext *ac, redisCallbackFn *fn, void *priv
                           const char **argv, const size_t *argvlen);
 int redisAsyncFormattedCommand(redisAsyncContext *ac, redisCallbackFn *fn, void *privdata,
                                const char *cmd, size_t len);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

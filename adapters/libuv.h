@@ -1,10 +1,11 @@
 #ifndef __HIREDIS_LIBUV_H__
 #define __HIREDIS_LIBUV_H__
 
-#include <alloc.h>
-#include <async.h>
-#include <hiredis.h>
 #include <uv.h>
+
+#include "alloc.h"
+#include "async.h"
+#include "hiredis.h"
 
 typedef struct redisLibuvEvents {
   redisAsyncContext *context;

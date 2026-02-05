@@ -39,7 +39,11 @@
 #include <string.h>
 
 #include "sds.h"
-#include "sdsalloc.h"
+#include "alloc.h"
+
+#define s_malloc hi_malloc
+#define s_realloc hi_realloc
+#define s_free hi_free
 
 static inline size_t sdsHdrSize(char type) {
   switch (type & SDS_TYPE_MASK) {

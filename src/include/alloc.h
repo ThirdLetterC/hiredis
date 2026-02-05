@@ -34,10 +34,6 @@
 #include <stddef.h> /* for size_t */
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* Structure pointing to our actually configured allocators */
 typedef struct hiredisAllocFuncs {
   void *(*mallocFn)(size_t);
@@ -76,9 +72,5 @@ extern hiredisAllocFuncs hiredisAllocFns;
 static inline void hi_free(void *ptr) {
   hiredisAllocFns.freeFn(ptr);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* HIREDIS_ALLOC_H */

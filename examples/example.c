@@ -1,7 +1,8 @@
-#include <hiredis.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "hiredis.h"
 
 static void example_argv_command(redisContext *c, size_t n) {
   constexpr size_t argv_fixed = 2;

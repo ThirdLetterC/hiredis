@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <hiredis.h>
-#include <hiredis_ssl.h>
+#include "hiredis.h"
+#include "hiredis_ssl.h"
 
 int main(int argc, char **argv) {
   redisSSLContextError ssl_error = REDIS_SSL_CTX_NONE;

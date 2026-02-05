@@ -31,6 +31,7 @@
 
 #ifndef __HIREDIS_READ_H
 #define __HIREDIS_READ_H
+
 #include <stddef.h> /* for size_t */
 
 [[maybe_unused]] static constexpr int REDIS_ERR = -1;
@@ -67,10 +68,6 @@
 
 /* Default multi-bulk element limit */
 [[maybe_unused]] static constexpr long long REDIS_READER_MAX_ARRAY_ELEMENTS = (1LL << 32) - 1;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct redisReadTask {
   int type;
@@ -120,9 +117,5 @@ int redisReaderGetReply(redisReader *r, void **reply);
 #define redisReaderSetPrivdata(_r, _p) (int)(((redisReader *)(_r))->privdata = (_p))
 #define redisReaderGetObject(_r) (((redisReader *)(_r))->reply)
 #define redisReaderGetError(_r) (((redisReader *)(_r))->errstr)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
