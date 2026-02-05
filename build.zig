@@ -109,23 +109,26 @@ pub fn build(b: *std.Build) void {
 
     {
         const exe = addExample(b, "example", "examples/example.c", target, optimize, link_lib, base_cflags, false, false, false);
-        examples_step.dependOn(&exe.step);
+        const install_exe = b.addInstallArtifact(exe, .{});
+        examples_step.dependOn(&install_exe.step);
         if (enable_examples) {
-            b.installArtifact(exe);
+            b.getInstallStep().dependOn(&install_exe.step);
         }
     }
     {
         const exe = addExample(b, "example-push", "examples/example-push.c", target, optimize, link_lib, base_cflags, false, false, false);
-        examples_step.dependOn(&exe.step);
+        const install_exe = b.addInstallArtifact(exe, .{});
+        examples_step.dependOn(&install_exe.step);
         if (enable_examples) {
-            b.installArtifact(exe);
+            b.getInstallStep().dependOn(&install_exe.step);
         }
     }
     {
         const exe = addExample(b, "example-poll", "examples/example-poll.c", target, optimize, link_lib, base_cflags, false, false, false);
-        examples_step.dependOn(&exe.step);
+        const install_exe = b.addInstallArtifact(exe, .{});
+        examples_step.dependOn(&install_exe.step);
         if (enable_examples) {
-            b.installArtifact(exe);
+            b.getInstallStep().dependOn(&install_exe.step);
         }
     }
     {
@@ -141,25 +144,28 @@ pub fn build(b: *std.Build) void {
             false,
             true,
         );
-        examples_step.dependOn(&exe.step);
+        const install_exe = b.addInstallArtifact(exe, .{});
+        examples_step.dependOn(&install_exe.step);
         if (enable_examples) {
-            b.installArtifact(exe);
+            b.getInstallStep().dependOn(&install_exe.step);
         }
     }
 
     if (enable_ssl) {
         const exe = addExample(b, "example-ssl", "examples/example-ssl.c", target, optimize, link_lib, base_cflags, true, false, false);
-        examples_step.dependOn(&exe.step);
+        const install_exe = b.addInstallArtifact(exe, .{});
+        examples_step.dependOn(&install_exe.step);
         if (enable_examples) {
-            b.installArtifact(exe);
+            b.getInstallStep().dependOn(&install_exe.step);
         }
     }
 
     if (enable_libuv) {
         const exe = addExample(b, "example-libuv", "examples/example-libuv.c", target, optimize, link_lib, base_cflags, false, true, false);
-        examples_step.dependOn(&exe.step);
+        const install_exe = b.addInstallArtifact(exe, .{});
+        examples_step.dependOn(&install_exe.step);
         if (enable_examples) {
-            b.installArtifact(exe);
+            b.getInstallStep().dependOn(&install_exe.step);
         }
     }
 }
