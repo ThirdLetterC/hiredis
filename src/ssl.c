@@ -30,8 +30,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <openssl/err.h>
-#include <openssl/ssl.h>
+#include <wolfssl/options.h>
+#include <wolfssl/openssl/err.h>
+#include <wolfssl/openssl/ssl.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -49,7 +50,7 @@
 void __redisSetError(redisContext *c, int type, const char *str);
 
 struct redisSSLContext {
-  /* Associated OpenSSL SSL_CTX as created by redisCreateSSLContext() */
+  /* Associated SSL_CTX as created by redisCreateSSLContext() */
   SSL_CTX *ssl_ctx;
 
   /* Requested SNI, or nullptr */
@@ -60,7 +61,7 @@ struct redisSSLContext {
  */
 typedef struct redisSSL {
   /**
-   * OpenSSL SSL object.
+   * SSL object from the wolfSSL compatibility layer.
    */
   SSL *ssl;
 
@@ -84,11 +85,11 @@ typedef struct redisSSL {
 redisContextFuncs redisContextSSLFuncs;
 
 /**
- * OpenSSL global initialization and locking handling callbacks.
- * Note that this is only required for OpenSSL < 1.1.0.
+ * SSL global initialization and locking handling callbacks.
+ * Note that this is only required for OpenSSL API versions < 1.1.0.
  */
 
-#if OPENSSL_VERSION_NUMBER < 0x1010'0000L
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010'0000L
 #define HIREDIS_USE_CRYPTO_LOCKS
 #endif
 
@@ -110,6 +111,9 @@ static void sslLockRelease(sslLockType *l) {
 static sslLockType *ossl_locks;
 static unsigned ossl_lock_count;
 static bool ossl_lock_cleanup_registered;
+
+static void opensslDoLock(int mode, int lkid, [[maybe_unused]] const char *f,
+                          [[maybe_unused]] int line);
 
 static void freeOpensslLocks() {
   if (ossl_locks == nullptr)
@@ -168,8 +172,9 @@ static int initOpensslLocks() {
 #endif /* HIREDIS_USE_CRYPTO_LOCKS */
 
 int redisInitOpenSSL() {
-#ifdef HIREDIS_USE_CRYPTO_LOCKS
   SSL_library_init();
+
+#ifdef HIREDIS_USE_CRYPTO_LOCKS
   if (initOpensslLocks() != REDIS_OK)
     return REDIS_ERR;
 #endif
@@ -186,7 +191,7 @@ const char *redisSSLContextGetError(redisSSLContextError error) {
   case REDIS_SSL_CTX_NONE:
     return "No Error";
   case REDIS_SSL_CTX_CREATE_FAILED:
-    return "Failed to create OpenSSL SSL_CTX";
+    return "Failed to create SSL_CTX";
   case REDIS_SSL_CTX_CERT_KEY_REQUIRED:
     return "Client cert and key must both be specified or skipped";
   case REDIS_SSL_CTX_CA_CERT_LOAD_FAILED:
@@ -263,7 +268,7 @@ redisSSLContext *redisCreateSSLContextWithOptions(const redisSSLOptions *options
   }
 
   const SSL_METHOD *ssl_method;
-#if OPENSSL_VERSION_NUMBER >= 0x1010'0000L
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x1010'0000L
   ssl_method = TLS_client_method();
 #else
   ssl_method = SSLv23_client_method();
@@ -276,7 +281,7 @@ redisSSLContext *redisCreateSSLContextWithOptions(const redisSSLOptions *options
     goto error;
   }
 
-#if OPENSSL_VERSION_NUMBER >= 0x1010'0000L
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x1010'0000L
   SSL_CTX_set_min_proto_version(ctx->ssl_ctx, TLS1_2_VERSION);
 #else
   SSL_CTX_set_options(ctx->ssl_ctx,

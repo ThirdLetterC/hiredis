@@ -49,7 +49,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const enable_ssl = b.option(bool, "ssl", "Enable OpenSSL support") orelse false;
+    const enable_ssl = b.option(bool, "ssl", "Enable wolfSSL support") orelse false;
     const enable_examples = b.option(bool, "examples", "Build example programs") orelse false;
     const enable_libuv = b.option(bool, "libuv", "Build the libuv example (requires libuv)") orelse false;
     const build_shared = b.option(bool, "shared", "Build shared library") orelse true;
@@ -201,8 +201,7 @@ fn addHiredisLibrary(
     });
 
     if (enable_ssl and shared) {
-        lib.linkSystemLibrary("ssl");
-        lib.linkSystemLibrary("crypto");
+        lib.linkSystemLibrary("wolfssl");
         lib.linkSystemLibrary("pthread");
     }
 
@@ -234,8 +233,7 @@ fn addExample(
     exe.linkLibrary(lib);
 
     if (needs_ssl) {
-        exe.linkSystemLibrary("ssl");
-        exe.linkSystemLibrary("crypto");
+        exe.linkSystemLibrary("wolfssl");
     }
 
     if (needs_ssl or needs_pthread) {

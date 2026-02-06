@@ -34,13 +34,14 @@
 
 #include "hiredis/hiredis.h"
 
-/* This is the underlying struct for SSL in ssl.h, which is not included to
- * keep build dependencies short here.
+/* Forward declaration from wolfSSL's OpenSSL compatibility layer.
+ * ssl.h is not included here to keep build dependencies short.
  */
-struct ssl_st;
+struct WOLFSSL;
+typedef struct WOLFSSL SSL;
 
-/* A wrapper around OpenSSL SSL_CTX to allow easy SSL use without directly
- * calling OpenSSL.
+/* A wrapper around SSL_CTX to allow easy SSL use without directly
+ * calling wolfSSL APIs.
  */
 typedef struct redisSSLContext redisSSLContext;
 
@@ -50,7 +51,7 @@ typedef struct redisSSLContext redisSSLContext;
 
 typedef enum {
   REDIS_SSL_CTX_NONE = 0,                   /* No Error */
-  REDIS_SSL_CTX_CREATE_FAILED,              /* Failed to create OpenSSL SSL_CTX */
+  REDIS_SSL_CTX_CREATE_FAILED,              /* Failed to create SSL_CTX */
   REDIS_SSL_CTX_CERT_KEY_REQUIRED,          /* Client cert and key must both be specified
                                                or skipped */
   REDIS_SSL_CTX_CA_CERT_LOAD_FAILED,        /* Failed to load CA Certificate or CA Path
@@ -65,7 +66,7 @@ typedef enum {
                                                from system to the SSL context */
 } redisSSLContextError;
 
-/* Constants that mirror OpenSSL's verify modes. By default,
+/* Constants that mirror SSL verify modes. By default,
  * REDIS_SSL_VERIFY_PEER is used with redisCreateSSLContext().
  * Some Redis clients disable peer verification if there are no
  * certificates specified.
@@ -76,7 +77,7 @@ typedef enum {
 [[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_CLIENT_ONCE = 0b0100;
 [[maybe_unused]] static constexpr int REDIS_SSL_VERIFY_POST_HANDSHAKE = 0b1000;
 
-/* Options to create an OpenSSL context. */
+/* Options to create an SSL context. */
 typedef struct {
   const char *cacert_filename;
   const char *capath;
@@ -93,23 +94,22 @@ typedef struct {
 const char *redisSSLContextGetError(redisSSLContextError error);
 
 /**
- * Helper function to initialize the OpenSSL library.
+ * Helper function to initialize the SSL library.
  *
- * OpenSSL requires one-time initialization before it can be used. Callers
- * should call this function only once, and only if OpenSSL is not directly
- * initialized elsewhere.
+ * This function name is preserved for API compatibility. It initializes the
+ * configured TLS backend when required.
  */
 int redisInitOpenSSL();
 
 /**
- * Helper function to initialize an OpenSSL context that can be used
+ * Helper function to initialize an SSL context that can be used
  * to initiate SSL connections.
  *
  * cacert_filename is an optional name of a CA certificate/bundle file to load
  * and use for validation.
  *
  * capath is an optional directory path where trusted CA certificate files are
- * stored in an OpenSSL-compatible structure.
+ * stored in a compatible hashed certificate directory structure.
  *
  * cert_filename and private_key_filename are optional names of a client side
  * certificate and private key files to use for authentication. They need to
@@ -129,7 +129,7 @@ int redisInitOpenSSL();
                                                      redisSSLContextError *error);
 
 /**
- * Helper function to initialize an OpenSSL context that can be used
+ * Helper function to initialize an SSL context that can be used
  * to initiate SSL connections. This is a more extensible version of
  * redisCreateSSLContext().
  *
@@ -142,7 +142,7 @@ int redisInitOpenSSL();
                                                                 redisSSLContextError *error);
 
 /**
- * Free a previously created OpenSSL context.
+ * Free a previously created SSL context.
  */
 void redisFreeSSLContext(redisSSLContext *redis_ssl_ctx);
 
@@ -150,16 +150,16 @@ void redisFreeSSLContext(redisSSLContext *redis_ssl_ctx);
  * Initiate SSL on an existing redisContext.
  *
  * This is similar to redisInitiateSSL() but does not require the caller
- * to directly interact with OpenSSL, and instead uses a redisSSLContext
+ * to directly interact with the TLS library, and instead uses a redisSSLContext
  * previously created using redisCreateSSLContext().
  */
 
 int redisInitiateSSLWithContext(redisContext *c, redisSSLContext *redis_ssl_ctx);
 
 /**
- * Initiate SSL/TLS negotiation on a provided OpenSSL SSL object.
+ * Initiate SSL/TLS negotiation on a provided SSL object.
  */
 
-int redisInitiateSSL(redisContext *c, struct ssl_st *ssl);
+int redisInitiateSSL(redisContext *c, SSL *ssl);
 
 #endif /* __HIREDIS_SSL_H */

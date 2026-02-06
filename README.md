@@ -13,7 +13,7 @@ Or with `just`:
 
 **Build Options**
 
-1. `-Dssl=true` enables OpenSSL support (links `ssl`, `crypto`, `pthread` for shared builds).
+1. `-Dssl=true` enables wolfSSL support (links `wolfssl`, `pthread` for shared builds).
 2. `-Dexamples=true` installs the example binaries.
 3. `-Dlibuv=true` builds the libuv example (requires system `libuv`).
 4. `-Dshared=false` disables the shared library.
