@@ -33,6 +33,7 @@
 #include <wolfssl/options.h>
 #include <wolfssl/openssl/err.h>
 #include <wolfssl/openssl/ssl.h>
+#include <wolfssl/wolfcrypt/ecc.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -366,6 +367,8 @@ static int redisSSLConnect(redisContext *c, SSL *ssl) {
 
   auto rv = SSL_connect(rssl->ssl);
   if (rv == 1) {
+    /* Free retained ECC fixed-point tables after certificate verification. */
+    wc_ecc_fp_free();
     c->funcs = &redisContextSSLFuncs;
     c->privctx = rssl;
     return REDIS_OK;
